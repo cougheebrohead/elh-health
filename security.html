@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Security &amp; Compliance — Vitalstack</title>
+<style>
+:root { --bg:#FDFBF7; --text:#0E1A2A; --text-dim:#4A5562; --border:#E5E1DB; --accent:#0E7C66; --serif:'Newsreader','Iowan Old Style',Georgia,serif; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font:17px/1.7 'Inter',-apple-system,sans-serif; }
+.nav { display:flex; justify-content:space-between; padding:18px 32px; border-bottom:1px solid var(--border); }
+.logo { font:600 22px var(--serif); }
+.nav a { color:var(--text-dim); text-decoration:none; margin-left:24px; font-size:14px; }
+.wrap { max-width:780px; margin:0 auto; padding:64px 24px; }
+h1 { font:500 48px/1.05 var(--serif); margin-bottom:14px; letter-spacing:-0.02em; }
+.lede { color:var(--text-dim); font-size:19px; margin-bottom:48px; max-width:680px; }
+h2 { font:500 28px var(--serif); margin:48px 0 12px; }
+h3 { font-weight:700; margin:24px 0 8px; font-size:17px; }
+p { color:#1F2A3A; margin-bottom:14px; }
+ul { margin:14px 0 14px 22px; }
+li { margin-bottom:6px; color:#1F2A3A; }
+table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; }
+th, td { text-align:left; padding:10px 0; border-bottom:1px solid var(--border); }
+th { font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" style="text-decoration:none;color:inherit"><div class="logo">Vitalstack</div></a>
+  <div>
+    <a href="/pricing">Pricing</a>
+    <a href="/demo">Book a demo</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Security &amp; compliance</h1>
+  <p class="lede">A short summary of how Vitalstack handles customer and member data. We share extended materials (DPA, architecture diagram, SBOM) under a mutual NDA on request.</p>
+
+  <h2>Data classification</h2>
+  <table>
+    <tr><th>Class</th><th>Examples</th><th>Storage</th></tr>
+    <tr><td>PHI</td><td>Health profile, biometrics, meals</td><td>Encrypted at rest, RLS-locked, audit-chained reads</td></tr>
+    <tr><td>PII</td><td>Name, email, employee ID</td><td>Encrypted at rest, RLS-locked</td></tr>
+    <tr><td>Operational</td><td>IPs, user agents</td><td>Hashed before storage; raw IP never persisted</td></tr>
+  </table>
+
+  <h2>Authentication</h2>
+  <ul>
+    <li>SSO: SAML 2.0 (Okta, Azure AD, OneLogin, Google Workspace) and OIDC.</li>
+    <li>Password (when SSO not enforced): PBKDF2-SHA256, 200,000 iterations (OWASP 2024 minimum).</li>
+    <li>Sessions: 32-byte URL-safe tokens, SHA-256 hashed in DB, 30-day TTL.</li>
+    <li>Brute-force protection: per-IP, per-org rate limiting on login.</li>
+  </ul>
+
+  <h2>Authorization</h2>
+  <ul>
+    <li>App-layer scoping: every query is filtered by org_id (and site_id where relevant).</li>
+    <li>Row-level security: every PHI table has RLS policies that key off the request's org_id, user_id, and role GUCs. Defense-in-depth — even a missing WHERE clause is caught.</li>
+    <li>Least privilege: trainers see only their roster; site admins only their site; org admins only their org.</li>
+  </ul>
+
+  <h2>Audit chain</h2>
+  <p>Every read of member PHI inserts a row into <code>audit_log</code> with a SHA-256 digest of the previous row + the current canonical event. Tampering with any historic row breaks verification at that point. Logs are retained for 7 years (HIPAA) and exportable on request.</p>
+
+  <h2>Network</h2>
+  <ul>
+    <li>TLS 1.2+ everywhere; HSTS preload</li>
+    <li>Strict CSP; frame-ancestors 'none'</li>
+    <li>Per-tenant subdomain isolation (cookies scoped to tenant subdomain)</li>
+  </ul>
+
+  <h2>Subprocessors</h2>
+  <p>We share the full subprocessor list (Supabase, Render, Resend, Sentry, Stripe for billing only) under DPA. Customers are notified 30 days before any new subprocessor is added.</p>
+
+  <h2>Reporting</h2>
+  <p>Quarterly security reviews are included in every Enterprise contract. We will (a) walk through the audit chain for your tenant, (b) review access patterns and flag anomalies, (c) hand you a written summary for your security committee.</p>
+
+  <h2>Vulnerability reports</h2>
+  <p>Coordinated disclosure to <a href="mailto:security@vitalstack.app" style="color:var(--accent)">security@vitalstack.app</a>. We respond within one business day and credit reporters in our public security log.</p>
+</div>
+
+</body>
+</html>

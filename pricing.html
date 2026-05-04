@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pricing — Vitalstack</title>
+<style>
+:root { --bg:#FDFBF7; --text:#0E1A2A; --text-dim:#4A5562; --border:#E5E1DB; --accent:#0E7C66; --serif:'Newsreader',Georgia,serif; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font:17px/1.7 'Inter',-apple-system,sans-serif; }
+.nav { display:flex; justify-content:space-between; padding:18px 32px; border-bottom:1px solid var(--border); }
+.logo { font:600 22px var(--serif); }
+.nav a { color:var(--text-dim); text-decoration:none; margin-left:24px; font-size:14px; }
+.wrap { max-width:1080px; margin:0 auto; padding:64px 24px; }
+h1 { font:500 52px/1.05 var(--serif); letter-spacing:-0.02em; margin-bottom:12px; }
+.lede { color:var(--text-dim); font-size:19px; margin-bottom:48px; max-width:680px; }
+.tier-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+@media (max-width:760px) { .tier-row { grid-template-columns:1fr; } }
+.tier { background:#fff; border:1px solid var(--border); border-radius:14px; padding:36px; }
+.tier h2 { font:500 32px var(--serif); margin-bottom:6px; }
+.price { color:var(--text-dim); margin-bottom:14px; }
+ul { list-style:none; padding:0; margin:18px 0; }
+li { padding:10px 0 10px 22px; position:relative; border-bottom:1px solid var(--border); font-size:15px; }
+li:last-child { border-bottom:none; }
+li::before { content:'·'; position:absolute; left:6px; color:var(--accent); font-weight:700; font-size:18px; line-height:18px; }
+.btn { display:inline-block; padding:14px 24px; background:var(--accent); color:#fff; text-decoration:none; border-radius:8px; font-weight:600; }
+table { width:100%; border-collapse:collapse; margin-top:64px; font-size:14px; }
+th, td { text-align:left; padding:14px 12px; border-bottom:1px solid var(--border); }
+th { font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="/" style="text-decoration:none;color:inherit"><div class="logo">Vitalstack</div></a>
+  <div>
+    <a href="/security">Security</a>
+    <a href="/demo">Book a demo</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Pricing</h1>
+  <p class="lede">All Vitalstack contracts are direct, annual, and invoiced. Pricing scales with active members and includes implementation, training, and quarterly business reviews.</p>
+
+  <div class="tier-row">
+    <div class="tier">
+      <h2>Enterprise</h2>
+      <div class="price"><strong>$8</strong> per active member per month, billed annually</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For chains, clinics, and telehealth practices serving up to a few thousand members.</p>
+      <ul>
+        <li>Up to 25 sites</li>
+        <li>Hierarchical org → site → trainer → member</li>
+        <li>SSO (SAML 2.0 + OIDC) included</li>
+        <li>SCIM v2 inbound provisioning</li>
+        <li>BAA available</li>
+        <li>Tamper-evident audit logs (7-year retention)</li>
+        <li>Dedicated success manager</li>
+        <li>Quarterly compliance review</li>
+        <li>4-hour support SLA, business hours</li>
+      </ul>
+      <a href="/demo" class="btn">Schedule a demo</a>
+    </div>
+
+    <div class="tier">
+      <h2>Enterprise Plus</h2>
+      <div class="price">Custom · multi-year terms · custom SLAs</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For multi-region deployments and operators with single-tenant requirements.</p>
+      <ul>
+        <li>Unlimited sites and members</li>
+        <li>Single-tenant database (private region)</li>
+        <li>Customer-managed encryption keys (CMK)</li>
+        <li>Custom data residency (US East / US West / EU / Canada)</li>
+        <li>Per-tenant API gateway</li>
+        <li>Named security engineer</li>
+        <li>Dedicated implementation team</li>
+        <li>1-hour incident response, 24×7</li>
+        <li>Bridge letters and on-site security review</li>
+      </ul>
+      <a href="/demo" class="btn">Talk to sales</a>
+    </div>
+  </div>
+
+  <h2 style="font:500 28px var(--serif); margin-top:64px">Included on every plan</h2>
+  <table>
+    <tr><th>Implementation</th><td>4–8 weeks of guided onboarding (SSO, SCIM, branding, training)</td></tr>
+    <tr><th>Migration</th><td>From spreadsheets, MyFitnessPal Premium, Trainerize, custom EMR exports</td></tr>
+    <tr><th>Training</th><td>Live trainer onboarding sessions, recorded library, written runbooks</td></tr>
+    <tr><th>Reviews</th><td>Quarterly compliance + utilization review with named CSM</td></tr>
+    <tr><th>Data export</th><td>JSON / CSV at any time; 30-day post-termination retention</td></tr>
+    <tr><th>SLA credits</th><td>Pro-rata credits on missed availability or response targets</td></tr>
+  </table>
+
+  <p style="margin-top:48px;color:var(--text-dim)">Pilot programs (3 months, single site, prepaid) are available case-by-case. Email <a href="mailto:hello@vitalstack.app" style="color:var(--accent)">hello@vitalstack.app</a> to discuss.</p>
+</div>
+
+</body>
+</html>

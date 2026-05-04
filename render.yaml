@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: vitalstack
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APEX_HOST
+        value: vitalstack.app
+      - key: ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # Secrets set via Render dashboard / API.

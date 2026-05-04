@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vitalstack</title>
+<!--BRAND_INJECT-->
+<style>
+:root {
+  --primary:#1F2A3A;
+  --accent: #0E7C66;
+  --bg:     #FDFBF7;
+  --bg-card:#FFFFFF;
+  --border: #E5E1DB;
+  --text:   #0E1A2A;
+  --text-dim:#4A5562;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font:16px/1.5 'Inter',-apple-system,sans-serif; }
+.shell { min-height:100vh; }
+.hdr { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--border); background:#fff; }
+.brand { font:600 18px 'Newsreader',Georgia,serif; }
+.tabs { display:flex; gap:4px; padding:0 16px; border-bottom:1px solid var(--border); background:#fff; }
+.tab { padding:14px 16px; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; font-weight:500; font-size:14px; }
+.tab.on { color:var(--accent); border-bottom-color:var(--accent); }
+.view { padding:24px; max-width:1080px; margin:0 auto; }
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:14px; }
+.btn { background:var(--accent); color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:14px; }
+.btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+input, textarea { width:100%; padding:11px 14px; background:#fff; border:1px solid var(--border); border-radius:10px; color:var(--text); font:inherit; outline:none; }
+input:focus, textarea:focus { border-color:var(--accent); }
+.empty { text-align:center; padding:64px 20px; color:var(--text-dim); }
+.empty h2 { color:var(--text); font-size:22px; margin-bottom:10px; font-weight:600; }
+.label { font-size:13px; color:var(--text-dim); margin-bottom:6px; display:block; font-weight:500; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ─── Login pane ─── -->
+<div id="loginPane" style="display:none">
+  <div class="view">
+    <div class="card" style="max-width:420px;margin:80px auto">
+      <div class="brand" id="brandLogin" style="font-size:22px;margin-bottom:6px">Vitalstack</div>
+      <p style="color:var(--text-dim);margin-bottom:18px;font-size:14px" id="welcomeMsg">Sign in to your Vitalstack workspace.</p>
+      <div id="ssoSection">
+        <button class="btn" style="width:100%" onclick="window.location.href='/api/sso/login'">Sign in with SSO</button>
+      </div>
+      <div id="passwordSection">
+        <label class="label">Email</label>
+        <input id="loginEmail" type="email" autocomplete="email">
+        <label class="label" style="margin-top:14px">Password</label>
+        <input id="loginPass" type="password" autocomplete="current-password">
+        <div id="loginErr" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+        <button class="btn" style="width:100%;margin-top:18px" onclick="doLogin()">Sign in</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── App pane ─── -->
+<div id="appPane" style="display:none">
+  <div class="hdr">
+    <div class="brand" id="brandTop">Vitalstack</div>
+    <button class="btn-ghost btn" onclick="doLogout()">Log out</button>
+  </div>
+  <div class="tabs">
+    <div class="tab on" onclick="switchTab('sites')">Sites</div>
+    <div class="tab" onclick="switchTab('members')">Members</div>
+    <div class="tab" onclick="switchTab('audit')">Audit log</div>
+  </div>
+  <div id="tabSites" class="view">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:18px">Sites</h2>
+    <div id="sitesList"><div class="empty"><h2>No sites yet.</h2><p>Your sites will appear here once provisioning is complete.</p></div></div>
+  </div>
+  <div id="tabMembers" class="view" style="display:none">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:18px">Members</h2>
+    <div class="empty"><h2>Pick a site to view its roster.</h2></div>
+  </div>
+  <div id="tabAudit" class="view" style="display:none">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:18px">Audit log</h2>
+    <div class="empty"><h2>Audit access requires org admin role.</h2></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const BRAND = window.__BRAND__ || { name:'Vitalstack', primary:'#1F2A3A', accent:'#0E7C66', sso_required:false };
+document.documentElement.style.setProperty('--primary', BRAND.primary);
+document.documentElement.style.setProperty('--accent',  BRAND.accent);
+document.title = BRAND.app_name || BRAND.name;
+document.getElementById('brandLogin').textContent = BRAND.name;
+document.getElementById('brandTop').textContent  = BRAND.name;
+document.getElementById('welcomeMsg').textContent = 'Sign in to ' + BRAND.name + '.';
+if (BRAND.sso_required) {
+  document.getElementById('passwordSection').style.display = 'none';
+} else {
+  document.getElementById('ssoSection').style.display = 'none';
+}
+
+let token = localStorage.getItem('vs_token') || null;
+
+// Catch ?token= from SSO callback
+const qToken = new URLSearchParams(location.search).get('token');
+if (qToken) {
+  token = qToken;
+  localStorage.setItem('vs_token', token);
+  history.replaceState({}, '', location.pathname);
+}
+
+async function api(path, opts) {
+  const h = { 'Content-Type':'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(path, { ...opts, headers: h });
+  if (r.status === 401) { token = null; localStorage.removeItem('vs_token'); render(); return null; }
+  return r.json();
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.style.display = 'none';
+  const d = await fetch('/api/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ email, password })
+  }).then(r => r.json()).catch(() => null);
+  if (!d || d.error) { err.textContent = d?.error || 'Sign-in failed.'; err.style.display = ''; return; }
+  token = d.token;
+  localStorage.setItem('vs_token', token);
+  render();
+}
+
+async function doLogout() {
+  if (token) await api('/api/logout', { method:'POST' });
+  token = null;
+  localStorage.removeItem('vs_token');
+  render();
+}
+
+async function loadSites() {
+  const d = await api('/api/sites');
+  if (!d || !d.sites) return;
+  const el = document.getElementById('sitesList');
+  if (!d.sites.length) {
+    el.innerHTML = '<div class="empty"><h2>No sites yet.</h2><p>Provision your first site from the org admin panel.</p></div>';
+    return;
+  }
+  el.innerHTML = d.sites.map(s => `
+    <div class="card">
+      <div style="font-weight:600;font-size:16px">${s.name}</div>
+      <div style="color:var(--text-dim);font-size:13px;margin-top:2px">${s.timezone || ''}</div>
+    </div>
+  `).join('');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  event.currentTarget.classList.add('on');
+  document.getElementById('tabSites').style.display   = name === 'sites' ? '' : 'none';
+  document.getElementById('tabMembers').style.display = name === 'members' ? '' : 'none';
+  document.getElementById('tabAudit').style.display   = name === 'audit' ? '' : 'none';
+}
+
+async function render() {
+  if (!token) {
+    document.getElementById('loginPane').style.display = '';
+    document.getElementById('appPane').style.display = 'none';
+    return;
+  }
+  const d = await api('/api/me');
+  if (!d || !d.user) { document.getElementById('loginPane').style.display = ''; return; }
+  document.getElementById('loginPane').style.display = 'none';
+  document.getElementById('appPane').style.display = '';
+  loadSites();
+}
+
+render();
+</script>
+</body>
+</html>

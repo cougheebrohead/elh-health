@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /scim/
+
+Sitemap: https://vitalstack.app/sitemap.xml
