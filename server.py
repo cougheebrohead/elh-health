@@ -173,6 +173,18 @@ class H(BaseHTTPRequestHandler):
             org = org_resolver(host)
             path = url.path
 
+            # Apex override: ?org=<slug> lets demos work without wildcard DNS.
+            # Used by the sales-admin impersonation redirect when the customer
+            # subdomain isn't yet routed (pre-DNS state).
+            if not org:
+                qs = parse_qs(url.query)
+                slug_override = (qs.get("org") or [None])[0]
+                if slug_override:
+                    from db import db
+                    org = db.fetch_one(
+                        "select * from orgs where slug = $1", slug_override,
+                    )
+
             # Apex routes (marketing + ELH-admin)
             if not org:
                 return self._apex(method, path, url)

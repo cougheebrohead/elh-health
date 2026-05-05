@@ -208,9 +208,15 @@ def handle(handler, org: dict | None, method: str, path: str, url) -> None:
             sess["id"], org_id, user["id"],
             (body.get("reason") or "support investigation")[:500],
         )
+        slug = db.fetch_one('select slug from orgs where id = $1', org_id)['slug']
+        host = handler.headers.get('Host', 'headshealth.app').split(':')[0]
+        scheme = 'https' if 'onrender.com' in host or '.app' in host or '.com' in host else 'http'
         return handler._json(200, {
             "token": token,
-            "redirect_to": f"https://{db.fetch_one('select slug from orgs where id = $1', org_id)['slug']}.{handler.headers.get('Host','headshealth.app').split(':')[0]}",
+            # Subdomain redirect (works once DNS is wired)
+            "redirect_to": f"{scheme}://{slug}.{host}",
+            # Apex fallback that works without DNS — uses ?org=slug override
+            "redirect_to_apex": f"{scheme}://{host}/?org={slug}&token={token}",
         })
 
     if method == "GET" and path == "/api/sales/leads":
