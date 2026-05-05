@@ -76,6 +76,108 @@ def _here(name: str) -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
 
 
+# ─── AI photo helper ─────────────────────────────────────────────────
+# Gemini Flash for food photo analysis. Free tier covers normal member
+# usage; rate-limited by handler.
+
+import re as _re
+import urllib.request as _urllib_request
+import urllib.parse as _urllib_parse
+
+_PHOTO_PROMPT = (
+    "You are a precise nutrition analyst. Examine this food photo and return strict JSON.\n"
+    "Identify each food at its most specific level. Estimate portions using visible reference cues.\n"
+    "Return ONLY valid JSON, no markdown fences, no commentary:\n"
+    "{\"items\":[{\"name\":\"food\",\"portion\":\"USDA portion\",\"calories\":int,"
+    "\"protein\":int,\"carbs\":int,\"fat\":int}]}\n"
+    "If not food, return {\"items\":[]}."
+)
+
+
+def _ai_food_photo(image_b64: str, mime: str) -> list[dict]:
+    gem_key = os.environ.get("GEMINI_KEY", "").strip()
+    claude_key = (
+        os.environ.get("CLAUDE_KEY", "").strip()
+        or os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    )
+    if not gem_key and not claude_key:
+        raise RuntimeError("No AI key configured (set GEMINI_KEY or CLAUDE_KEY)")
+    if gem_key:
+        try:
+            return _gemini_call(image_b64, mime, gem_key)
+        except Exception as e:
+            print(f"[ELHHealth] Gemini failed, trying Claude: {e}", flush=True)
+            if not claude_key:
+                raise
+    return _claude_call(image_b64, mime, claude_key)
+
+
+def _gemini_call(image_b64: str, mime: str, api_key: str) -> list[dict]:
+    body = {
+        "contents": [{"parts": [
+            {"text": _PHOTO_PROMPT},
+            {"inline_data": {"mime_type": mime, "data": image_b64}},
+        ]}],
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500},
+    }
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        "gemini-2.0-flash:generateContent?key=" + _urllib_parse.quote(api_key)
+    )
+    req = _urllib_request.Request(
+        url, data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    with _urllib_request.urlopen(req, timeout=20) as r:
+        result = json.loads(r.read())
+    text = (result.get("candidates", [{}])[0]
+                  .get("content", {}).get("parts", [{}])[0].get("text", ""))
+    return _parse_ai_json(text)
+
+
+def _claude_call(image_b64: str, mime: str, api_key: str) -> list[dict]:
+    body = {
+        "model": "claude-sonnet-4-6",
+        "max_tokens": 1500,
+        "messages": [{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
+            {"type": "text", "text": _PHOTO_PROMPT},
+        ]}],
+    }
+    req = _urllib_request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(body).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        }, method="POST",
+    )
+    with _urllib_request.urlopen(req, timeout=25) as r:
+        result = json.loads(r.read())
+    text = (result.get("content", [{}])[0] or {}).get("text", "")
+    return _parse_ai_json(text)
+
+
+def _parse_ai_json(text: str) -> list[dict]:
+    if not text:
+        return []
+    text = _re.sub(r"^```json\s*", "", text.strip())
+    text = _re.sub(r"\s*```$", "", text)
+    text = _re.sub(r",\s*([}\]])", r"\1", text)
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        m = _re.search(r"\{[\s\S]*\}", text)
+        parsed = json.loads(m.group()) if m else {}
+    return (parsed.get("items") or [])[:12]
+
+
+def _gemini_food_photo(image_b64: str, mime: str, api_key: str) -> list[dict]:
+    """Backwards-compat wrapper retained for any in-flight callers."""
+    return _ai_food_photo(image_b64, mime)
+
+
 # ────────────────────────────────────────────────────────────────────
 #  Response helpers
 # ────────────────────────────────────────────────────────────────────
@@ -639,7 +741,177 @@ class H(BaseHTTPRequestHandler):
                 json.dumps(items), json.dumps(totals),
                 (body.get("source") or "manual"),
             )
-            return self._json(201, {"ok": True, "totals": totals})
+            # Allergen check via fitapp_core engine
+            alerts = []
+            try:
+                import fitapp_core
+                profile = db.fetch_one(
+                    "select allergies_json from member_profiles where user_id = $1",
+                    sess["user_id"],
+                )
+                allergies = (profile or {}).get("allergies_json") or []
+                if allergies and items:
+                    alerts = fitapp_core.allergen_alerts(items, allergies) or []
+            except Exception as e:
+                print(f"[ELHHealth] allergen check failed: {e}", flush=True)
+            return self._json(201, {"ok": True, "totals": totals, "allergen_alerts": alerts})
+
+        if method == "POST" and path == "/api/me/meal/from-barcode":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            body = self._read_body()
+            code = (body.get("code") or "").strip()
+            if not code or not code.isdigit() or len(code) > 20:
+                return self._err(400, "valid barcode required")
+            try:
+                import fitapp_core
+                if not fitapp_core.valid_gtin_checksum(code):
+                    return self._err(400, "invalid checksum")
+                usda_key = os.environ.get("USDA_API_KEY", "").strip()
+                entry = fitapp_core.barcode_with_fallback(code, usda_api_key=usda_key)
+            except Exception as e:
+                return self._err(502, f"lookup failed: {e}")
+            if not entry:
+                return self._err(404, "product not found")
+            return self._json(200, {"ok": True, "item": entry})
+
+        if method == "POST" and path == "/api/me/meal/from-photo":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            ip_key = f"photo:{sess['user_id']}"
+            if not rate_allow(ip_key, 20, 60 * 60):
+                return self._err(429, "too many photos")
+            body = self._read_body()
+            b64 = (body.get("image_b64") or "").strip()
+            mime = (body.get("mime") or "image/jpeg").strip()
+            if not b64 or len(b64) > 6_000_000:
+                return self._err(400, "image required (base64, < 4.5MB)")
+            try:
+                items = _ai_food_photo(b64, mime)
+            except RuntimeError as e:
+                return self._err(503, str(e))
+            except Exception as e:
+                return self._err(502, f"AI failed: {e}")
+            return self._json(200, {"ok": True, "items": items})
+
+        if method == "GET" and path == "/api/me/cycle":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            prof = db.fetch_one(
+                "select last_period_iso, cycle_length from member_profiles where user_id = $1",
+                sess["user_id"],
+            )
+            last = (prof or {}).get("last_period_iso")
+            if not last:
+                return self._json(200, {"phase": None, "set_up": False})
+            try:
+                import fitapp_core
+                iso = last.isoformat() if hasattr(last, "isoformat") else str(last)
+                length = int((prof or {}).get("cycle_length") or 28)
+                ph = fitapp_core.cycle_phase(iso, cycle_length=length)
+            except Exception as e:
+                return self._err(500, f"cycle calc failed: {e}")
+            return self._json(200, {"set_up": True, **ph})
+
+        if method == "GET" and path == "/api/me/recovery":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            rows = db.fetch_all(
+                """select hrv_rmssd_ms as hrv_ms, sleep_hours,
+                          heart_rate_bpm as resting_hr
+                   from biometrics
+                   where org_id = $1 and member_id = $2
+                     and reading_at > now() - interval '36 hours'
+                   order by reading_at desc limit 5""",
+                org_id, sess["user_id"],
+            )
+            latest = rows[0] if rows else {}
+            baseline_row = db.fetch_one(
+                """select avg(heart_rate_bpm)::float as avg_hr
+                   from biometrics
+                   where org_id = $1 and member_id = $2
+                     and heart_rate_bpm is not null
+                     and reading_at > now() - interval '14 days'""",
+                org_id, sess["user_id"],
+            )
+            try:
+                import fitapp_core
+                r = fitapp_core.recovery_score(
+                    hrv_ms=latest.get("hrv_ms"),
+                    sleep_hours=latest.get("sleep_hours"),
+                    resting_hr=latest.get("resting_hr"),
+                    baseline_resting_hr=(baseline_row or {}).get("avg_hr"),
+                )
+            except Exception:
+                r = {"score": 0, "tier": "moderate", "factors": {}, "advice": "Connect a wearable to start tracking readiness."}
+            return self._json(200, r)
+
+        if method == "GET" and path == "/api/me/today/workout":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            row = db.fetch_one(
+                """select pe.program_id, pe.started_at, p.name as program_name,
+                          p.workouts_json, p.duration_days
+                   from program_enrollments pe
+                   join programs p on p.id = pe.program_id
+                   where pe.org_id = $1 and pe.member_id = $2 and pe.status = 'active'
+                   order by pe.started_at desc limit 1""",
+                org_id, sess["user_id"],
+            )
+            if not row:
+                return self._json(200, {"workout": None})
+            try:
+                workouts = json.loads(row["workouts_json"]) if isinstance(row["workouts_json"], str) else (row["workouts_json"] or [])
+            except Exception:
+                workouts = []
+            if not workouts:
+                return self._json(200, {"workout": None, "program_name": row.get("program_name")})
+            from datetime import datetime as _dt, timezone as _tz
+            started = row.get("started_at")
+            if hasattr(started, "isoformat"):
+                started_dt = started
+            else:
+                started_dt = _dt.fromisoformat(str(started).replace("Z", "+00:00"))
+            from datetime import datetime as _dt2, timezone as _tz2
+            day_idx = max(0, (_dt2.now(_tz2.utc).date() - started_dt.date()).days)
+            today_w = workouts[day_idx % len(workouts)]
+            return self._json(200, {
+                "workout": today_w,
+                "program_name": row.get("program_name"),
+                "day_of_program": day_idx + 1,
+            })
+
+        if method == "GET" and path == "/api/me/glucose/tir":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            rows = db.fetch_all(
+                """select reading_at::text as timestamp, glucose_mgdl as value
+                   from biometrics
+                   where org_id = $1 and member_id = $2
+                     and glucose_mgdl is not null
+                     and reading_at > now() - interval '14 days'
+                   order by reading_at""",
+                org_id, sess["user_id"],
+            )
+            readings = [{"timestamp": r["timestamp"], "value": int(r["value"]), "context": "random"} for r in rows]
+            try:
+                import fitapp_core
+                tir = fitapp_core.time_in_range(readings)
+            except Exception:
+                tir = {"in_range_pct": 0, "n_readings": 0, "mean_glucose": 0, "gmi": 0}
+            return self._json(200, {"tir": tir, "readings": readings[-100:]})
 
         if method == "POST" and path == "/api/me/biometric":
             sess = self._require_session()
@@ -650,12 +922,15 @@ class H(BaseHTTPRequestHandler):
             db.execute(
                 """insert into biometrics
                    (org_id, member_id, reading_at, weight_kg, glucose_mgdl,
-                    bp_systolic, bp_diastolic, heart_rate_bpm, source)
-                   values ($1,$2, now(),$3,$4,$5,$6,$7,$8)""",
+                    bp_systolic, bp_diastolic, heart_rate_bpm,
+                    hrv_rmssd_ms, sleep_hours, steps, active_kcal, source)
+                   values ($1,$2, now(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)""",
                 org_id, sess["user_id"],
                 body.get("weight_kg"), body.get("glucose_mgdl"),
                 body.get("bp_systolic"), body.get("bp_diastolic"),
                 body.get("heart_rate_bpm"),
+                body.get("hrv_ms"), body.get("sleep_hours"),
+                body.get("steps"), body.get("active_kcal"),
                 body.get("source") or "manual",
             )
             return self._json(201, {"ok": True})
