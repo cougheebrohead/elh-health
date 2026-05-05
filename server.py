@@ -66,6 +66,8 @@ from scim import (authenticate_scim_request, list_users, create_user,
 from ratelimit import allow as rate_allow
 import analytics
 import sales
+import wizard
+import provisioner
 
 PORT = int(os.environ.get("PORT", "10000"))
 ENV  = os.environ.get("ENV", "development")
@@ -222,11 +224,24 @@ class H(BaseHTTPRequestHandler):
             if path == "/robots.txt":
                 return self._serve_static("robots.txt")
 
+        # Wizard routes — branded-demo onboarding (sales-admin gated)
+        if path.startswith("/api/sales/wizard"):
+            if wizard.handle(self, method, path, url):
+                return
+
+        # Path-based demo route — works without wildcard SSL.
+        # /demo/<slug>           -> password gate + branded preview
+        # /api/demo/<slug>/login -> verify password, issue session + 302
+        if path.startswith("/demo/") or path.startswith("/api/demo/"):
+            return self._demo_route(method, path, url)
+
         # Sales super-admin lives at the apex (sales.elhhealth.app/admin/...)
         if path.startswith("/api/sales/"):
             return sales.handle(self, None, method, path, url)
         if method == "GET" and path in ("/admin", "/admin/"):
             return self._serve_static("admin.html")
+        if method == "GET" and path in ("/admin/onboard", "/admin/onboard/"):
+            return self._serve_static("onboard.html")
         if method == "GET" and path == "/trust":
             return self._serve_static("trust.html")
 
@@ -666,6 +681,177 @@ class H(BaseHTTPRequestHandler):
 
         return self._err(404, "not found")
 
+    def _demo_route(self, method: str, path: str, url) -> None:
+        """Path-based demo gate. Matches /demo/<slug> and /api/demo/<slug>/*.
+
+        - GET  /demo/<slug>           -> password gate page (HTML)
+        - POST /api/demo/<slug>/login -> verify password, issue session,
+                                          return {redirect_url}
+        - GET  /demo/<slug>?key=...   -> auto-verify + 302 to branded app
+        """
+        # Strip any trailing slash for matching
+        clean = path.rstrip("/")
+
+        # /api/demo/<slug>/login
+        if clean.startswith("/api/demo/") and clean.endswith("/login"):
+            slug = clean[len("/api/demo/"):-len("/login")]
+            if not slug:
+                return self._err(400, "slug required")
+            ip_key = f"demo-gate:{slug}:{self._ip_hash()}"
+            if not rate_allow(ip_key, 8, 5 * 60):
+                return self._err(429, "too many attempts")
+            body = self._read_body()
+            password = (body.get("password") or "").strip()
+            org = provisioner.verify_demo_password(slug, password)
+            if not org:
+                return self._err(401, "invalid password or expired")
+            token = self._issue_demo_session(org)
+            return self._json(200, {
+                "ok": True,
+                "redirect_url": f"/?org={org['slug']}&token={token}",
+                "brand": {
+                    "name": org["display_name"],
+                    "primary": org["brand_primary"],
+                    "accent": org["brand_accent"],
+                },
+            })
+
+        # GET /demo/<slug>
+        if method == "GET" and clean.startswith("/demo/"):
+            slug = clean[len("/demo/"):]
+            # Optional ?key= for shareable one-link demos
+            qs = parse_qs(url.query)
+            key = (qs.get("key") or [None])[0]
+            org_meta = db.fetch_one(
+                """select slug, display_name, logo_url, brand_primary, brand_accent,
+                          is_demo, demo_expires_at
+                   from orgs where slug = $1""",
+                slug,
+            )
+            if not org_meta or not org_meta.get("is_demo"):
+                self._hdrs(404)
+                self.wfile.write(b"Demo not found.")
+                return
+            if key:
+                org = provisioner.verify_demo_password(slug, key)
+                if org:
+                    token = self._issue_demo_session(org)
+                    self.send_response(302)
+                    self.send_header(
+                        "Location", f"/?org={org['slug']}&token={token}",
+                    )
+                    self.end_headers()
+                    return
+                # Fall through to gate page; password was wrong
+            return self._serve_demo_gate(org_meta, key_attempted=bool(key))
+
+        return self._err(404, "not found")
+
+    def _issue_demo_session(self, org: dict) -> str:
+        """Find the demo's org_admin user and issue them a regular session
+        token. The token is just a normal user session — auth.py doesn't
+        need to know it's a demo."""
+        user = db.fetch_one(
+            "select id from users where org_id = $1 and role = 'org_admin' and is_active limit 1",
+            org["id"],
+        )
+        if not user:
+            # Shouldn't happen post-provision, but defensive
+            return ""
+        return issue_session(
+            user_id=user["id"], org_id=org["id"],
+            ip=self.headers.get("CF-Connecting-IP") or self.client_address[0],
+            ua=("demo-gate;" + self.headers.get("User-Agent", ""))[:300],
+        )
+
+    def _serve_demo_gate(self, org_meta: dict, key_attempted: bool = False) -> None:
+        """Stand-alone branded password page for a demo. No SPA, no auth
+        cookies — just a single form posting to /api/demo/<slug>/login."""
+        primary = org_meta.get("brand_primary") or "#0A1628"
+        accent = org_meta.get("brand_accent") or "#3C4858"
+        name = org_meta.get("display_name") or "Demo"
+        logo = org_meta.get("logo_url") or ""
+        slug = org_meta.get("slug") or ""
+        err_html = (
+            "<p class='err'>That password didn't work. Try again, or ask "
+            "the sender for the latest link.</p>" if key_attempted else ""
+        )
+        logo_html = (
+            f"<img src='{logo}' alt='' onerror='this.remove()'>" if logo else ""
+        )
+        page = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sales preview — {name}</title>
+<style>
+  html,body{{margin:0;padding:0;height:100%;background:#FAFAF8;
+    font:400 15px/1.4 Inter,system-ui,sans-serif;color:#0A0A0C;}}
+  .wrap{{max-width:480px;margin:8vh auto 0;padding:0 24px;text-align:center;}}
+  .card{{background:#fff;border:1px solid #E8E5DF;border-radius:16px;
+    padding:40px 32px;box-shadow:0 8px 32px rgba(10,22,40,.06);}}
+  img{{max-height:64px;max-width:240px;margin-bottom:16px;display:block;
+    margin-left:auto;margin-right:auto;}}
+  h1{{font:600 22px/1.2 Newsreader,Georgia,serif;margin:0 0 6px;}}
+  .sub{{color:#5C5F66;font-size:14px;margin-bottom:28px;}}
+  .pill{{display:inline-block;padding:5px 12px;border-radius:999px;
+    background:{primary};color:#fff;font-weight:600;font-size:11px;
+    letter-spacing:.05em;text-transform:uppercase;margin-bottom:24px;}}
+  input[type=password]{{width:100%;padding:14px 16px;border:1px solid #E8E5DF;
+    border-radius:10px;font-size:15px;background:#fff;}}
+  input:focus{{outline:none;border-color:{accent};}}
+  button{{width:100%;margin-top:14px;padding:14px;border:0;border-radius:10px;
+    background:{primary};color:#fff;font-weight:600;font-size:14px;
+    cursor:pointer;letter-spacing:.02em;}}
+  button:hover{{opacity:.94;}}
+  .err{{color:#A8456B;font-size:13px;margin:14px 0 0;}}
+  footer{{margin-top:24px;font-size:11px;color:#8A8E94;line-height:1.5;}}
+</style>
+</head><body>
+<div class="wrap"><div class="card">
+  <span class="pill">Sales Preview</span>
+  {logo_html}
+  <h1>{name}</h1>
+  <p class="sub">This is a private preview prepared for your team.<br>
+     Not affiliated with {name}.</p>
+  <form id="f">
+    <input id="pw" name="password" type="password" placeholder="Access password" autofocus required>
+    <button type="submit">Open preview</button>
+    {err_html}
+  </form>
+</div>
+<footer>Powered by ELH Health · Sales engineering preview · Expires automatically.</footer>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', async (e)=>{{
+  e.preventDefault();
+  const pw = document.getElementById('pw').value;
+  const r = await fetch('/api/demo/{slug}/login', {{
+    method:'POST', headers:{{'Content-Type':'application/json'}},
+    body: JSON.stringify({{password: pw}}),
+  }});
+  if (!r.ok) {{
+    const t = await r.text();
+    document.querySelectorAll('.err').forEach(n=>n.remove());
+    const e2 = document.createElement('p'); e2.className='err';
+    e2.textContent = r.status===429 ? 'Too many attempts. Try again in a few minutes.' : 'Invalid password.';
+    document.getElementById('f').appendChild(e2);
+    return;
+  }}
+  const j = await r.json();
+  location.href = j.redirect_url;
+}});
+</script>
+</body></html>"""
+        self._hdrs(
+            200, "text/html; charset=utf-8",
+            extra={
+                "X-Robots-Tag": "noindex, nofollow, nosnippet, noarchive",
+                "Cache-Control": "no-store, private",
+            },
+        )
+        self.wfile.write(page.encode())
+
     def _serve_org_app(self, org: dict) -> None:
         """Inject the brand payload into app.html and serve."""
         return self._serve_branded(org, "app.html")
@@ -679,6 +865,7 @@ class H(BaseHTTPRequestHandler):
             return self._err(500, f"{fname} missing")
         with open(full, "r") as f:
             html = f.read()
+        is_demo = bool(org.get("is_demo"))
         brand_js = (
             "<script>window.__BRAND__ = " + json.dumps({
                 "name": org["display_name"],
@@ -687,10 +874,35 @@ class H(BaseHTTPRequestHandler):
                 "accent": org["brand_accent"],
                 "logo_url": org.get("logo_url"),
                 "sso_required": bool(org.get("sso_required")),
+                "is_demo": is_demo,
             }) + ";</script>"
         )
         html = html.replace("<!--BRAND_INJECT-->", brand_js)
-        self._hdrs(200, "text/html; charset=utf-8")
+        if is_demo:
+            # Sales-preview watermark — always visible, can't be hidden by
+            # the SPA's own CSS (high z-index + position:fixed). Stamps
+            # legal context for any screenshot or screen-share.
+            wm = org["display_name"]
+            watermark_html = (
+                "<style>"
+                "#__demo_wm{position:fixed;left:50%;bottom:14px;"
+                "transform:translateX(-50%);z-index:2147483647;"
+                "background:rgba(10,22,40,.92);color:#fff;"
+                "font:600 11px/1 Inter,system-ui,sans-serif;"
+                "letter-spacing:.04em;text-transform:uppercase;"
+                "padding:8px 16px;border-radius:999px;pointer-events:none;"
+                "box-shadow:0 4px 24px rgba(0,0,0,.25);}"
+                "</style>"
+                f"<div id=\"__demo_wm\">Sales Preview — Not Affiliated With {wm}</div>"
+            )
+            html = html.replace("</body>", watermark_html + "</body>", 1)
+            extra_headers = {
+                "X-Robots-Tag": "noindex, nofollow, nosnippet, noarchive",
+                "Cache-Control": "no-store, private",
+            }
+        else:
+            extra_headers = None
+        self._hdrs(200, "text/html; charset=utf-8", extra=extra_headers)
         self.wfile.write(html.encode())
 
     def _login(self, org: dict) -> None:
