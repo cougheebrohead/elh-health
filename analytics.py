@@ -68,6 +68,76 @@ def exec_kpis(org_id: str) -> dict[str, Any]:
     }
 
 
+def region_kpis(org_id: str, region_id: str) -> dict[str, Any]:
+    """KPIs scoped to a single region within an org. Mirrors exec_kpis
+    but filtered to members whose site belongs to the given region."""
+    rows = db.fetch_all(
+        """with region_sites as (
+            select s.id from sites s
+            where s.org_id = $1 and s.region_id = $2
+        )
+        select
+            (select count(*) from users u
+              where u.org_id = $1 and u.role = 'member' and u.is_active
+                and u.site_id in (select id from region_sites)) as members_total,
+            (select count(*) from users u
+              where u.org_id = $1 and u.role = 'member'
+                and u.last_login_at > now() - interval '7 days'
+                and u.site_id in (select id from region_sites)) as members_7d,
+            (select count(*) from users u
+              where u.org_id = $1 and u.role = 'member'
+                and u.last_login_at > now() - interval '30 days'
+                and u.site_id in (select id from region_sites)) as members_30d,
+            (select count(*) from users u
+              where u.org_id = $1 and u.role = 'member'
+                and u.created_at > now() - interval '30 days'
+                and u.site_id in (select id from region_sites)) as new_30d,
+            (select count(*) from users u
+              where u.org_id = $1 and u.role = 'trainer' and u.is_active
+                and u.site_id in (select id from region_sites)) as trainers_total,
+            (select count(*) from region_sites) as sites_total,
+            (select round(avg(es.score)::numeric, 1)::float
+              from engagement_score es
+              join users u on u.id = es.member_id
+              where es.org_id = $1
+                and u.site_id in (select id from region_sites)) as avg_engagement,
+            (select count(*) from engagement_score es
+              join users u on u.id = es.member_id
+              where es.org_id = $1 and es.risk_tier = 'ghosting'
+                and u.site_id in (select id from region_sites)) as ghosting,
+            (select count(*) from engagement_score es
+              join users u on u.id = es.member_id
+              where es.org_id = $1 and es.risk_tier = 'slipping'
+                and u.site_id in (select id from region_sites)) as slipping,
+            (select count(*) from engagement_score es
+              join users u on u.id = es.member_id
+              where es.org_id = $1 and es.risk_tier = 'on_track'
+                and u.site_id in (select id from region_sites)) as on_track,
+            (select count(*) from engagement_score es
+              join users u on u.id = es.member_id
+              where es.org_id = $1 and es.risk_tier = 'crushing'
+                and u.site_id in (select id from region_sites)) as crushing
+        """,
+        org_id, region_id,
+    )
+    r = rows[0] if rows else {}
+    return {
+        "members_total":   r.get("members_total") or 0,
+        "members_7d":      r.get("members_7d") or 0,
+        "members_30d":     r.get("members_30d") or 0,
+        "new_30d":         r.get("new_30d") or 0,
+        "trainers_total":  r.get("trainers_total") or 0,
+        "sites_total":     r.get("sites_total") or 0,
+        "avg_engagement":  r.get("avg_engagement") or 0,
+        "risk_buckets": {
+            "crushing":  r.get("crushing") or 0,
+            "on_track":  r.get("on_track") or 0,
+            "slipping":  r.get("slipping") or 0,
+            "ghosting":  r.get("ghosting") or 0,
+        },
+    }
+
+
 def member_growth_series(org_id: str, days: int = 90) -> list[dict]:
     """Daily count of new members for the last N days."""
     rows = db.fetch_all(

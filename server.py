@@ -459,6 +459,14 @@ class H(BaseHTTPRequestHandler):
                 return self._err(403, "forbidden")
             return self._json(200, analytics.exec_kpis(org_id))
 
+        if method == "GET" and path.startswith("/api/regions/") and path.endswith("/kpis"):
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("org_admin", "region_manager", "sales_admin"):
+                return self._err(403, "forbidden")
+            region_id = path.split("/")[3]
+            return self._json(200, analytics.region_kpis(org_id, region_id))
+
         if method == "GET" and path == "/api/exec/growth":
             sess = self._require_session()
             if not sess: return
@@ -535,6 +543,54 @@ class H(BaseHTTPRequestHandler):
                 user_agent=self.headers.get("User-Agent", "")[:300],
             )
             return self._json(200, data)
+
+        if method == "GET" and path.startswith("/api/members/") and path.endswith("/notes"):
+            sess = self._require_session()
+            if not sess: return
+            member_id = path.split("/")[3]
+            rows = db.fetch_all(
+                """select n.id, n.body, n.created_at::text as created_at,
+                          u.name as trainer_name
+                   from trainer_notes n
+                   left join users u on u.id = n.trainer_id
+                   where n.org_id = $1 and n.member_id = $2
+                   order by n.created_at desc limit 200""",
+                org_id, member_id,
+            )
+            return self._json(200, {"notes": rows})
+
+        if method == "POST" and path.startswith("/api/members/") and path.endswith("/notes"):
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("trainer", "site_admin", "region_manager", "org_admin"):
+                return self._err(403, "trainers + admins only")
+            member_id = path.split("/")[3]
+            body = self._read_body()
+            note_body = (body.get("body") or "").strip()
+            if not note_body or len(note_body) > 4000:
+                return self._err(400, "note body required (≤ 4000 chars)")
+            row = db.fetch_one(
+                """insert into trainer_notes (org_id, trainer_id, member_id, body)
+                   values ($1,$2,$3,$4) returning id, created_at::text as created_at""",
+                org_id, sess["user_id"], member_id, note_body,
+            )
+            return self._json(201, {"id": row["id"], "created_at": row["created_at"]})
+
+        if method == "DELETE" and path.startswith("/api/members/") and "/notes/" in path:
+            sess = self._require_session()
+            if not sess: return
+            note_id = path.rsplit("/", 1)[-1]
+            # Only the trainer who wrote it (or org_admin) can delete
+            note = db.fetch_one(
+                "select trainer_id from trainer_notes where id = $1 and org_id = $2",
+                note_id, org_id,
+            )
+            if not note:
+                return self._err(404, "note not found")
+            if note["trainer_id"] != sess["user_id"] and sess["role"] != "org_admin":
+                return self._err(403, "only the author or an org admin can delete")
+            db.execute("delete from trainer_notes where id = $1 and org_id = $2", note_id, org_id)
+            return self._json(200, {"ok": True})
 
         if method == "GET" and path.startswith("/api/members/") and path.endswith("/audit"):
             sess = self._require_session()

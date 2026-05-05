@@ -364,20 +364,33 @@ function bars(canvas, labels, values, color) {
 const VIEWS = {};
 
 VIEWS.executive = { title: 'Executive Overview', async render() {
-  const [k, growth, eng, coh, pop] = await Promise.all([
-    api('/api/exec/kpis'),
+  const regionSel = (sessionStorage.getItem('exec_region_id') || '').trim();
+  const kpiUrl = regionSel ? `/api/regions/${regionSel}/kpis` : '/api/exec/kpis';
+  const [k, growth, eng, coh, pop, regions] = await Promise.all([
+    api(kpiUrl),
     api('/api/exec/growth?days=90'),
     api('/api/exec/engagement-curve'),
     api('/api/exec/cohorts'),
     api('/api/population-health').catch(() => null),
+    api('/api/regions').catch(() => ({ regions: [] })),
   ]);
+  const regionList = (regions && regions.regions) || [];
+  const currentRegion = regionList.find(r => r.id === regionSel);
+  const scopeLabel = currentRegion ? `${currentRegion.name} region` : `${k.sites_total} sites`;
 
   const html = `
     <div class="head">
       <div>
         <h1>${BRAND.name} — Executive view</h1>
-        <p class="sub">As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${k.sites_total} sites · ${fmt(k.members_total)} members</p>
+        <p class="sub">As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${scopeLabel} · ${fmt(k.members_total)} members</p>
       </div>
+      ${regionList.length ? `
+      <div>
+        <select id="region-sel" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font:inherit">
+          <option value="">All regions</option>
+          ${regionList.map(r => `<option value="${r.id}" ${r.id===regionSel?'selected':''}>${r.name}</option>`).join('')}
+        </select>
+      </div>` : ''}
     </div>
     <div class="row k4">
       <div class="kpi card">
@@ -457,6 +470,14 @@ VIEWS.executive = { title: 'Executive Overview', async render() {
        (eng.buckets||[]).map(b => b.bucket_min + '+'),
        (eng.buckets||[]).map(b => b.n),
        '#0A1628');
+
+  // Region selector
+  const sel = document.getElementById('region-sel');
+  if (sel) sel.onchange = () => {
+    const v = sel.value || '';
+    if (v) sessionStorage.setItem('exec_region_id', v); else sessionStorage.removeItem('exec_region_id');
+    VIEWS.executive.render();
+  };
 }};
 
 VIEWS.clubs = { title: 'Clubs leaderboard', async render() {
@@ -670,6 +691,7 @@ async function openMember(memberId) {
       <button data-mt="nutrition">Nutrition</button>
       <button data-mt="programs">Programs</button>
       <button data-mt="messages">Messages</button>
+      <button data-mt="notes">Notes</button>
       <button data-mt="audit">Audit</button>
     </div>
     <div id="mt-overview">
@@ -692,19 +714,60 @@ async function openMember(memberId) {
     <div id="mt-messages" class="hidden">
       ${d.messages.length ? d.messages.map(m=>`<div style="margin-top:8px;padding:10px;background:var(--bg-soft);border-radius:8px"><div class="muted" style="font-size:11px">${relativeTime(m.sent_at)}${m.is_nudge?' · nudge':''}</div>${m.body}</div>`).join('') : '<p class=muted>No messages.</p>'}
     </div>
+    <div id="mt-notes" class="hidden">
+      <p class="sub" style="font-size:13px;color:var(--text-dim)">Private trainer notes — only you and other staff with access can see these.</p>
+      <textarea id="note-body" rows="3" placeholder="What you noticed in today's check-in…" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;margin-top:8px"></textarea>
+      <button class="btn primary sm" onclick="addMemberNote('${memberId}')" style="margin-top:6px">Save note</button>
+      <div id="notes-list" style="margin-top:14px"><p class=muted>Loading…</p></div>
+    </div>
     <div id="mt-audit" class="hidden"><p class=muted>Loading…</p></div>
   `;
   document.getElementById('modal').classList.add('on');
   document.querySelectorAll('#m-tabs button').forEach(b => b.onclick = () => {
     document.querySelectorAll('#m-tabs button').forEach(x => x.classList.toggle('on', x===b));
-    ['overview','nutrition','programs','messages','audit'].forEach(t =>
+    ['overview','nutrition','programs','messages','notes','audit'].forEach(t =>
       document.getElementById('mt-'+t).classList.toggle('hidden', t !== b.dataset.mt));
     if (b.dataset.mt === 'audit') loadMemberAudit(memberId);
+    if (b.dataset.mt === 'notes') loadMemberNotes(memberId);
   });
 
   // Render weight chart
   const ws = (d.weight_series||[]).slice().reverse().map(w => Number(w.weight_kg));
   if (ws.length) sparkline(document.getElementById('m-weight'), ws, '#0A1628');
+}
+
+async function loadMemberNotes(memberId) {
+  try {
+    const d = await api('/api/members/' + memberId + '/notes');
+    const list = document.getElementById('notes-list');
+    if (!d.notes.length) { list.innerHTML = '<p class=muted>No notes yet.</p>'; return; }
+    list.innerHTML = d.notes.map(n => `
+      <div style="margin-top:8px;padding:10px;background:var(--bg-soft);border-radius:8px">
+        <div class="muted" style="font-size:11px">${relativeTime(n.created_at)} · ${n.trainer_name || 'Trainer'}</div>
+        <div style="margin-top:4px;white-space:pre-wrap">${(n.body||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+        <button class="btn ghost sm" style="margin-top:6px" onclick="deleteMemberNote('${memberId}','${n.id}')">Delete</button>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('notes-list').innerHTML = '<p class=muted>Couldn\'t load notes.</p>';
+  }
+}
+
+async function addMemberNote(memberId) {
+  const body = document.getElementById('note-body').value.trim();
+  if (!body) return;
+  try {
+    await api('/api/members/' + memberId + '/notes', { method:'POST', body: JSON.stringify({ body }) });
+    document.getElementById('note-body').value = '';
+    loadMemberNotes(memberId);
+  } catch (e) { alert(e.message); }
+}
+
+async function deleteMemberNote(memberId, noteId) {
+  if (!confirm('Delete this note?')) return;
+  try {
+    await api('/api/members/' + memberId + '/notes/' + noteId, { method:'DELETE' });
+    loadMemberNotes(memberId);
+  } catch (e) { alert(e.message); }
 }
 
 async function loadMemberAudit(memberId) {
