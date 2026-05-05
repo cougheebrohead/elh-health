@@ -1051,21 +1051,22 @@ class H(BaseHTTPRequestHandler):
         })
 
     def _sso_acs(self, org: dict) -> None:
+        """SAML 2.0 Assertion Consumer Service. Verifies signature, extracts
+        attrs, upserts the user, issues a session, redirects to the SPA."""
         length = int(self.headers.get("Content-Length") or "0")
         raw = self.rfile.read(length).decode("utf-8", errors="replace")
         params = parse_qs(raw)
         saml_resp = (params.get("SAMLResponse") or [""])[0]
+        sp_entity_id = f"https://{org['slug']}.{APEX}/api/sso/metadata"
         try:
-            attrs = saml_assert_callback(org, saml_resp,
-                                         ip=self.client_address[0],
-                                         ua=self.headers.get("User-Agent", ""))
-        except NotImplementedError as e:
-            return self._err(501, str(e))
+            attrs = saml_assert_callback(
+                org, saml_resp,
+                sp_entity_id=sp_entity_id,
+                ip=self.client_address[0],
+                ua=self.headers.get("User-Agent", ""),
+            )
         except Exception as e:
             return self._err(400, f"SAML: {e}")
-        # Production: upsert + issue session here. Currently unreachable
-        # (saml_assert_callback raises NotImplementedError) — guarded by
-        # design until signature validation is wired.
         user_id = upsert_user_from_sso(
             org_id=org["id"], site_id=None,
             email=attrs["email"], name=attrs.get("name", attrs["email"]),
@@ -1076,6 +1077,17 @@ class H(BaseHTTPRequestHandler):
             sso_session_id=attrs.get("sso_session_id", ""),
             ip=self.client_address[0], ua=self.headers.get("User-Agent", ""),
         )
+        # Audit the SSO sign-in
+        try:
+            audit_event(
+                org_id=org["id"], actor_id=user_id, actor_role="member",
+                action="sso_login", resource_type="user",
+                resource_id=user_id, member_subject=user_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
+        except Exception:
+            pass
         self.send_response(302)
         self.send_header("Location", f"/?token={token}")
         self.end_headers()

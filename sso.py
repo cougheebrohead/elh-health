@@ -26,11 +26,38 @@ import hashlib
 import secrets
 import urllib.parse
 import zlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db import db
 from auth import issue_session
+
+
+_SAML_NS = {
+    "saml":  "urn:oasis:names:tc:SAML:2.0:assertion",
+    "samlp": "urn:oasis:names:tc:SAML:2.0:protocol",
+    "ds":    "http://www.w3.org/2000/09/xmldsig#",
+}
+
+# Common SAML attribute name URIs the major IdPs emit (Okta, Azure AD, OneLogin,
+# Google, generic). We map any of these to their conceptual key.
+_ATTR_ALIASES = {
+    "name": (
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",  # fallback to first
+        "name", "displayName", "displayname", "DisplayName",
+        "http://schemas.microsoft.com/ws/2008/06/identity/claims/displayname",
+        "User.DisplayName",
+    ),
+    "email": (
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+        "email", "mail", "Email", "User.email",
+    ),
+}
+
+# Acceptable clock skew between IdP and SP. Most enterprise SAML guidance
+# allows ~60s; we use 60s as a defensive default. RFC 5280 doesn't mandate.
+_CLOCK_SKEW_SEC = 60
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -71,25 +98,178 @@ def saml_login_url(org: dict[str, Any], acs_url: str, sp_entity_id: str) -> str:
     return f"{org['sso_idp_sso_url']}{sep}{qs}"
 
 
-def saml_assert_callback(org: dict[str, Any], saml_response_b64: str,
-                         ip: str | None = None, ua: str | None = None) -> str:
-    """Validate the IdP's SAMLResponse and issue a ELH Health session.
+def saml_assert_callback(
+    org: dict[str, Any],
+    saml_response_b64: str,
+    *,
+    sp_entity_id: str | None = None,
+    ip: str | None = None,
+    ua: str | None = None,
+) -> dict[str, Any]:
+    """Validate an IdP's SAMLResponse and return the verified attrs.
 
-    For brevity this scaffolding parses the email out of the assertion and
-    upserts the user. Production must validate the XML signature against
-    org.sso_idp_cert_pem before trusting any value — the cert validator is
-    intentionally a TODO that hard-fails so the unsigned path can't ship.
+    Returns: {"email": str, "name": str, "sso_subject": str, "sso_session_id": str}
+
+    Validation pipeline (any failure = exception, do not trust the payload):
+        1. Decode base64 → raw XML bytes
+        2. Verify XML signature against org.sso_idp_cert_pem (XMLDSig)
+        3. Locate the verified Assertion element (signature can be on the
+           Response wrapping the Assertion, or directly on the Assertion)
+        4. Validate Conditions (NotBefore / NotOnOrAfter ± clock skew)
+        5. Validate AudienceRestriction (must list our SP entity ID, if provided)
+        6. Validate Status code = Success
+        7. Extract NameID, AttributeStatement, AuthnStatement.SessionIndex
+
+    Per OASIS spec, Steps 4–6 are "MUST" checks for any production SP.
     """
-    raw = base64.b64decode(saml_response_b64)
+    if not saml_response_b64:
+        raise RuntimeError("SAML: missing SAMLResponse")
     if not org.get("sso_idp_cert_pem"):
         raise RuntimeError("SAML cert not configured for this org")
 
-    # TODO: validate XML signature with org['sso_idp_cert_pem'].
-    # Until validate_signature is implemented, refuse to issue a session.
-    raise NotImplementedError(
-        "SAML signature verification is required before this can issue a session. "
-        "Wire xmlsec via signxml or python3-saml; do NOT trust assertions otherwise."
+    try:
+        raw = base64.b64decode(saml_response_b64)
+    except Exception as e:
+        raise RuntimeError(f"SAML: bad base64 — {e}")
+
+    # Imports are local so the module loads even when signxml isn't yet
+    # installed (e.g. during local stdlib-only unit tests of other helpers).
+    try:
+        from signxml import XMLVerifier
+        from lxml import etree
+    except ImportError as e:
+        raise RuntimeError(
+            f"SAML signature deps missing — install signxml + lxml: {e}"
+        )
+
+    # 1+2. Verify signature against the org's IdP cert
+    try:
+        verified = XMLVerifier().verify(raw, x509_cert=org["sso_idp_cert_pem"])
+    except Exception as e:
+        raise RuntimeError(f"SAML signature invalid: {e}")
+
+    verified_xml = verified.signed_xml
+    if verified_xml is None:
+        raise RuntimeError("SAML: no signed XML element")
+
+    # 3. Locate the Assertion. signxml returns the signed element — for
+    #    signed-Response IdPs that's the Response, for signed-Assertion IdPs
+    #    that's the Assertion directly.
+    tag_local = etree.QName(verified_xml.tag).localname
+    if tag_local == "Assertion":
+        assertion = verified_xml
+    else:
+        assertion = verified_xml.find(".//saml:Assertion", _SAML_NS)
+        if assertion is None:
+            raise RuntimeError("SAML: no Assertion in verified payload")
+
+    # 6. Status (when we have the Response wrapper)
+    if tag_local == "Response":
+        status_code_el = verified_xml.find(
+            ".//samlp:Status/samlp:StatusCode", _SAML_NS,
+        )
+        if status_code_el is not None:
+            sv = status_code_el.get("Value", "")
+            if not sv.endswith(":status:Success"):
+                raise RuntimeError(f"SAML: non-success status {sv}")
+
+    # 4. Conditions / timing
+    now = datetime.now(timezone.utc)
+    conditions = assertion.find("saml:Conditions", _SAML_NS)
+    if conditions is not None:
+        nb = conditions.get("NotBefore")
+        noa = conditions.get("NotOnOrAfter")
+        if nb:
+            nbt = _parse_iso(nb)
+            if now + timedelta(seconds=_CLOCK_SKEW_SEC) < nbt:
+                raise RuntimeError("SAML: assertion not yet valid (NotBefore)")
+        if noa:
+            noat = _parse_iso(noa)
+            if now > noat + timedelta(seconds=_CLOCK_SKEW_SEC):
+                raise RuntimeError("SAML: assertion expired (NotOnOrAfter)")
+
+        # 5. Audience restriction — if the SP entity ID is supplied, our entity
+        # MUST be listed. If not supplied, we skip the check.
+        if sp_entity_id:
+            audiences = [
+                a.text.strip()
+                for a in conditions.findall(
+                    "saml:AudienceRestriction/saml:Audience", _SAML_NS,
+                )
+                if a.text
+            ]
+            if audiences and sp_entity_id not in audiences:
+                raise RuntimeError(
+                    f"SAML: audience mismatch (got {audiences!r}, want {sp_entity_id!r})"
+                )
+
+    # 7. NameID
+    name_id_el = assertion.find("saml:Subject/saml:NameID", _SAML_NS)
+    if name_id_el is None or not (name_id_el.text or "").strip():
+        raise RuntimeError("SAML: missing NameID")
+    name_id = name_id_el.text.strip()
+
+    # SubjectConfirmationData NotOnOrAfter — additional timing
+    scd = assertion.find(
+        "saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData",
+        _SAML_NS,
     )
+    if scd is not None:
+        scd_noa = scd.get("NotOnOrAfter")
+        if scd_noa and now > _parse_iso(scd_noa) + timedelta(seconds=_CLOCK_SKEW_SEC):
+            raise RuntimeError("SAML: subject confirmation expired")
+
+    # AttributeStatement
+    attrs: dict[str, str] = {}
+    for attr in assertion.findall(
+        "saml:AttributeStatement/saml:Attribute", _SAML_NS,
+    ):
+        name = attr.get("Name") or attr.get("FriendlyName") or ""
+        values = [
+            v.text.strip()
+            for v in attr.findall("saml:AttributeValue", _SAML_NS)
+            if v.text
+        ]
+        if name and values:
+            attrs[name] = values[0]
+
+    # Pick canonical email — prefer NameID if it looks like an email,
+    # else look for an email-claim attribute, else fall back to NameID.
+    email = name_id if "@" in name_id else ""
+    for k in _ATTR_ALIASES["email"]:
+        if not email and k in attrs and "@" in attrs[k]:
+            email = attrs[k]
+    if not email:
+        # Some IdPs provide email via the unspecified-NameID + a separate attr.
+        # If we still don't have one, treat as fatal (we need email to upsert).
+        raise RuntimeError("SAML: no email on assertion or NameID")
+
+    # Display name — fall through aliases
+    display_name = ""
+    for k in _ATTR_ALIASES["name"]:
+        if k in attrs:
+            display_name = attrs[k]
+            break
+    if not display_name:
+        display_name = email
+
+    # AuthnStatement -> SessionIndex
+    session_index = ""
+    authn = assertion.find("saml:AuthnStatement", _SAML_NS)
+    if authn is not None:
+        session_index = authn.get("SessionIndex", "") or ""
+
+    return {
+        "email":          email.lower(),
+        "name":           display_name,
+        "sso_subject":    name_id,
+        "sso_session_id": session_index,
+    }
+
+
+def _parse_iso(s: str) -> datetime:
+    """SAML uses 'Z' for UTC; Python's fromisoformat needs '+00:00'."""
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
 # ────────────────────────────────────────────────────────────────────

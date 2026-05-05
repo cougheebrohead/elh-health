@@ -1,2 +1,5 @@
 fitapp-core @ git+https://github.com/cougheebrohead/fitapp-core.git@main
 sentry-sdk>=2.0
+signxml>=4.0
+lxml>=5.0
+cryptography>=42.0
