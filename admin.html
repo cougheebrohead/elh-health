@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vitalstack — Sales Console</title>
+<style>
+:root {
+  --primary: #0E1A2A;
+  --accent:  #0E7C66;
+  --bg:      #FBFAF6;
+  --bg-card: #fff;
+  --bg-soft: #F4F2EC;
+  --border:  #E5E1DB;
+  --text:    #0E1A2A;
+  --text-dim:#4A5562;
+  --text-faint:#6B7480;
+  --serif: 'Newsreader',Georgia,serif;
+  --sans:  'Inter',-apple-system,system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:transparent;color:inherit}
+.head{padding:24px 36px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fff}
+.head .brand{font:500 22px var(--serif);letter-spacing:-0.01em}
+.head .brand b{color:var(--accent);font-weight:500}
+.head .me{font-size:13px;color:var(--text-dim)}
+main{padding:32px 36px;max-width:1300px;margin:0 auto}
+.head-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+h1{font:500 32px var(--serif);letter-spacing:-0.02em}
+.sub{color:var(--text-dim);font-size:14px;margin-top:6px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.kpi .lbl{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.kpi .val{font:500 32px var(--serif);letter-spacing:-0.01em}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tabs button{padding:12px 20px;color:var(--text-dim);font-weight:500;border-bottom:2px solid transparent;font-size:14px}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.btn{padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;background:var(--accent);color:#fff}
+.btn:hover{background:#0A5C4D}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn.sm{padding:6px 11px;font-size:12px}
+.tbl{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;padding:12px 14px;font-weight:600;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)}
+td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover{background:var(--bg-soft);cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(14,26,42,0.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal.on{display:flex}
+.modal-card{background:#fff;border-radius:14px;padding:28px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-card h2{font:500 24px var(--serif);margin-bottom:8px}
+.modal-card .sub{margin-bottom:18px}
+label.field{display:block;margin-bottom:14px}
+label.field .lab{font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;display:block}
+input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--border);border-radius:8px;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:32px;max-width:420px;width:100%}
+.login-card h1{font:500 26px var(--serif);margin-bottom:8px}
+.hidden{display:none!important}
+.muted{color:var(--text-dim)}
+.right{text-align:right}
+.pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600}
+.pill.new{background:#DBEAFE;color:#1E40AF}
+.pill.demo_scheduled{background:#E9D5FF;color:#6B21A8}
+.pill.negotiating{background:#FEF3C7;color:#92400E}
+.pill.won{background:#D1FAE5;color:#065F46}
+.pill.lost{background:#FEE2E2;color:#991B1B}
+.pill.cold{background:#F4F2EC;color:#6B7480}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login hidden">
+  <div class="login-card">
+    <h1>Vitalstack <b style="color:var(--accent);font-weight:500">Sales Console</b></h1>
+    <p class="muted" style="margin-bottom:20px">Internal use. Authorized personnel only.</p>
+    <label class="field"><span class="lab">Email</span><input id="email" type="email" autocomplete="email"></label>
+    <label class="field"><span class="lab">Password</span><input id="password" type="password" autocomplete="current-password"></label>
+    <div id="login-err" class="hidden" style="color:#B91C1C;font-size:13px;margin:-8px 0 14px"></div>
+    <button class="btn" style="width:100%;padding:12px" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="head">
+    <div class="brand">Vitalstack <b>Sales Console</b></div>
+    <div class="me"><span id="me-name">—</span> · <a href="#" onclick="doLogout();return false">sign out</a></div>
+  </div>
+
+  <main>
+    <div class="head-row">
+      <div>
+        <h1>Customer book</h1>
+        <p class="sub">Provision new orgs, watch utilisation, prep renewals.</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="openLeadModal()">+ Lead</button>
+        <button class="btn" onclick="openOrgModal()">+ New org</button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="lbl">Active orgs</div><div class="val" id="k-orgs">—</div></div>
+      <div class="kpi"><div class="lbl">Total ARR</div><div class="val" id="k-arr">—</div></div>
+      <div class="kpi"><div class="lbl">Pipeline</div><div class="val" id="k-pipeline">—</div></div>
+      <div class="kpi"><div class="lbl">Demos this week</div><div class="val" id="k-demos">—</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="on" data-tab="orgs">Customers</button>
+      <button data-tab="leads">CRM Leads</button>
+    </div>
+
+    <div id="t-orgs">
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Org</th><th>Plan</th><th>Members</th><th>Sites</th><th>Contract ends</th><th>ARR</th><th>BAA</th><th></th></tr></thead>
+          <tbody id="orgs-body"><tr><td colspan="8" class="muted" style="text-align:center;padding:32px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="t-leads" class="hidden">
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Company</th><th>Contact</th><th>Members est.</th><th>Status</th><th>Next action</th><th>ARR</th><th></th></tr></thead>
+          <tbody id="leads-body"><tr><td colspan="7" class="muted" style="text-align:center;padding:32px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
+  <div id="modal-body" class="modal-card"></div>
+</div>
+
+<script>
+let token = localStorage.getItem('vs_sales_token');
+
+async function api(path, opts={}) {
+  const h = {'Content-Type':'application/json'};
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(path, { ...opts, headers: { ...h, ...(opts.headers||{}) } });
+  if (r.status === 401) { token = null; localStorage.removeItem('vs_sales_token'); render(); return null; }
+  if (!r.ok) {
+    const d = await r.json().catch(()=>({error:'request failed'}));
+    throw new Error(d.error || 'request failed');
+  }
+  return r.json();
+}
+
+async function doLogin() {
+  const err = document.getElementById('login-err'); err.classList.add('hidden');
+  try {
+    const r = await fetch('/api/sales/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      password: document.getElementById('password').value,
+    })});
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error || 'Sign-in failed.'; err.classList.remove('hidden'); return; }
+    token = d.token; localStorage.setItem('vs_sales_token', token);
+    render();
+  } catch (e) { err.textContent = 'Connection failed.'; err.classList.remove('hidden'); }
+}
+
+async function doLogout() {
+  if (token) await api('/api/sales/logout', { method:'POST' });
+  token = null; localStorage.removeItem('vs_sales_token');
+  render();
+}
+
+async function render() {
+  if (!token) {
+    document.getElementById('login').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    return;
+  }
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+
+  const orgs = await api('/api/sales/orgs').catch(()=>null);
+  if (!orgs) return;
+  document.getElementById('me-name').textContent = 'Sales admin';
+  document.getElementById('k-orgs').textContent = orgs.active_orgs;
+  document.getElementById('k-arr').textContent = '$' + (orgs.total_arr || 0).toLocaleString();
+  loadOrgs(orgs.orgs);
+
+  const leads = await api('/api/sales/leads').catch(()=>({leads:[]}));
+  loadLeads(leads.leads || []);
+  const pipe = (leads.leads||[]).filter(l => !['won','lost','cold'].includes(l.status))
+                                .reduce((s,l) => s + (Number(l.arr_usd) || 0), 0);
+  document.getElementById('k-pipeline').textContent = '$' + pipe.toLocaleString();
+  const demosWeek = (leads.leads||[]).filter(l => l.status === 'demo_scheduled').length;
+  document.getElementById('k-demos').textContent = demosWeek;
+
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x===b));
+    document.getElementById('t-orgs').classList.toggle('hidden', b.dataset.tab !== 'orgs');
+    document.getElementById('t-leads').classList.toggle('hidden', b.dataset.tab !== 'leads');
+  });
+}
+
+function loadOrgs(rows) {
+  const body = document.getElementById('orgs-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="8" class="muted" style="text-align:center;padding:32px">No orgs yet — provision your first.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(o => {
+    const ends = o.contract_ends ? new Date(o.contract_ends).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    return `<tr onclick="impersonate('${o.id}','${o.slug}')">
+      <td><b>${o.display_name}</b><br><span class="muted" style="font-size:12px">${o.slug}.vitalstack.app</span></td>
+      <td><span class="pill new">${o.plan}</span></td>
+      <td>${(o.members||0).toLocaleString()}</td>
+      <td>${o.sites||0}</td>
+      <td>${ends}</td>
+      <td>$${(o.contract_value_usd||0).toLocaleString()}</td>
+      <td>${o.baa_signed_at ? '✓' : '—'}</td>
+      <td class="right"><button class="btn sm ghost" onclick="event.stopPropagation();impersonate('${o.id}','${o.slug}')">Open</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function loadLeads(rows) {
+  const body = document.getElementById('leads-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:32px">No leads yet — add one.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(l => `<tr>
+    <td><b>${l.company_name}</b></td>
+    <td>${l.contact_name||''}<br><span class="muted" style="font-size:12px">${l.contact_email||''}</span></td>
+    <td>${(l.members_estimate||0).toLocaleString()}</td>
+    <td><span class="pill ${l.status}">${l.status.replace('_',' ')}</span></td>
+    <td class="muted">${l.next_action_at || '—'}</td>
+    <td>${l.arr_usd ? '$'+Number(l.arr_usd).toLocaleString() : '—'}</td>
+    <td class="right"><select onchange="updateLeadStatus('${l.id}', this.value)">
+      <option ${l.status==='new'?'selected':''}>new</option>
+      <option ${l.status==='demo_scheduled'?'selected':''} value="demo_scheduled">demo_scheduled</option>
+      <option ${l.status==='negotiating'?'selected':''}>negotiating</option>
+      <option ${l.status==='won'?'selected':''}>won</option>
+      <option ${l.status==='lost'?'selected':''}>lost</option>
+      <option ${l.status==='cold'?'selected':''}>cold</option>
+    </select></td>
+  </tr>`).join('');
+}
+
+async function impersonate(orgId, slug) {
+  if (!confirm('Open ' + slug + '.vitalstack.app as the org admin?\n(Audit-logged.)')) return;
+  try {
+    const d = await api('/api/sales/orgs/'+orgId+'/impersonate', { method:'POST', body: JSON.stringify({reason:'sales demo'}) });
+    if (d.token) {
+      const url = `${location.protocol}//${slug}.${location.hostname.replace(/^[^.]+\./,'')}/?token=${d.token}`;
+      window.open(url, '_blank');
+    }
+  } catch (e) { alert(e.message); }
+}
+
+function openOrgModal() {
+  document.getElementById('modal-body').innerHTML = `
+    <h2>Provision new org</h2>
+    <p class="sub">A new tenant on the Vitalstack platform.</p>
+    <label class="field"><span class="lab">Slug (subdomain)</span><input id="o-slug" placeholder="acme"></label>
+    <label class="field"><span class="lab">Display name</span><input id="o-display"></label>
+    <label class="field"><span class="lab">Legal name</span><input id="o-legal"></label>
+    <label class="field"><span class="lab">Plan</span><select id="o-plan"><option>enterprise</option><option>enterprise_plus</option></select></label>
+    <label class="field"><span class="lab">Contract value (USD/yr)</span><input id="o-arr" type="number"></label>
+    <label class="field"><span class="lab">Contract starts</span><input id="o-starts" type="date"></label>
+    <label class="field"><span class="lab">Contract ends</span><input id="o-ends" type="date"></label>
+    <label class="field"><span class="lab">Initial admin email</span><input id="o-email" type="email"></label>
+    <label class="field"><span class="lab">Initial admin password</span><input id="o-pw" type="password"></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="submitOrg()">Provision</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('on');
+}
+
+async function submitOrg() {
+  const body = {
+    slug: document.getElementById('o-slug').value.trim().toLowerCase(),
+    display_name: document.getElementById('o-display').value.trim(),
+    legal_name: document.getElementById('o-legal').value.trim(),
+    plan: document.getElementById('o-plan').value,
+    contract_value_usd: Number(document.getElementById('o-arr').value || 0) || null,
+    contract_starts: document.getElementById('o-starts').value || null,
+    contract_ends: document.getElementById('o-ends').value || null,
+    admin_email: document.getElementById('o-email').value.trim().toLowerCase(),
+    admin_password: document.getElementById('o-pw').value,
+    admin_name: document.getElementById('o-display').value + ' Admin',
+  };
+  if (!body.slug || !body.display_name) return alert('slug + display name required');
+  try {
+    await api('/api/sales/orgs', { method:'POST', body: JSON.stringify(body) });
+    closeModal();
+    render();
+  } catch (e) { alert(e.message); }
+}
+
+function openLeadModal() {
+  document.getElementById('modal-body').innerHTML = `
+    <h2>New CRM lead</h2>
+    <p class="sub">Track every conversation through close.</p>
+    <label class="field"><span class="lab">Company</span><input id="l-co"></label>
+    <label class="field"><span class="lab">Contact name</span><input id="l-name"></label>
+    <label class="field"><span class="lab">Contact email</span><input id="l-email" type="email"></label>
+    <label class="field"><span class="lab">Members estimate</span><input id="l-est" type="number"></label>
+    <label class="field"><span class="lab">Estimated ARR (USD)</span><input id="l-arr" type="number"></label>
+    <label class="field"><span class="lab">Notes</span><textarea id="l-notes" rows="3"></textarea></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="submitLead()">Save</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('on');
+}
+
+async function submitLead() {
+  const body = {
+    company_name: document.getElementById('l-co').value.trim(),
+    contact_name: document.getElementById('l-name').value.trim() || null,
+    contact_email: document.getElementById('l-email').value.trim() || null,
+    members_estimate: Number(document.getElementById('l-est').value) || null,
+    arr_usd: Number(document.getElementById('l-arr').value) || null,
+    notes: document.getElementById('l-notes').value.trim() || null,
+  };
+  if (!body.company_name) return alert('company name required');
+  try {
+    await api('/api/sales/leads', { method:'POST', body: JSON.stringify(body) });
+    closeModal();
+    render();
+  } catch (e) { alert(e.message); }
+}
+
+async function updateLeadStatus(id, status) {
+  try { await api('/api/sales/leads/'+id, { method:'PATCH', body: JSON.stringify({status}) }); render(); }
+  catch (e) { alert(e.message); }
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('on'); }
+
+render();
+</script>
+</body>
+</html>

@@ -64,6 +64,8 @@ from sso import saml_login_url, saml_assert_callback, upsert_user_from_sso, issu
 from scim import (authenticate_scim_request, list_users, create_user,
                   replace_user, patch_user, deactivate_user)
 from ratelimit import allow as rate_allow
+import analytics
+import sales
 
 PORT = int(os.environ.get("PORT", "10000"))
 ENV  = os.environ.get("ENV", "development")
@@ -208,6 +210,14 @@ class H(BaseHTTPRequestHandler):
             if path == "/robots.txt":
                 return self._serve_static("robots.txt")
 
+        # Sales super-admin lives at the apex (sales.vitalstack.app/admin/...)
+        if path.startswith("/api/sales/"):
+            return sales.handle(self, None, method, path, url)
+        if method == "GET" and path in ("/admin", "/admin/"):
+            return self._serve_static("admin.html")
+        if method == "GET" and path == "/trust":
+            return self._serve_static("trust.html")
+
         if method == "POST" and path == "/api/demo":
             ip_key = f"demo:{self._ip_hash()}"
             if not rate_allow(ip_key, 5, 60 * 60):
@@ -255,6 +265,8 @@ class H(BaseHTTPRequestHandler):
         # SPA / static
         if method == "GET" and path in ("/", "/login", "/dashboard"):
             return self._serve_org_app(org)
+        if method == "GET" and path in ("/me", "/member"):
+            return self._serve_member_app(org)
 
         if method == "GET" and path == "/api/brand":
             return self._json(200, {
@@ -303,39 +315,356 @@ class H(BaseHTTPRequestHandler):
             sess = self._require_session()
             if not sess: return
             rows = db.fetch_all(
-                "select id, slug, name, timezone from sites where org_id = $1 order by name",
-                org_id, org_id=org_id, user_id=sess["user_id"],
-                role=sess["role"], site_id=sess.get("site_id"),
+                """select s.id, s.slug, s.name, s.timezone, s.address,
+                          r.id as region_id, r.name as region_name
+                   from sites s
+                   left join regions r on r.id = s.region_id
+                   where s.org_id = $1 order by s.name""",
+                org_id,
             )
             return self._json(200, {"sites": rows})
 
-        if method == "GET" and path.startswith("/api/members/") and path.endswith("/profile"):
+        if method == "GET" and path == "/api/regions":
+            sess = self._require_session()
+            if not sess: return
+            rows = db.fetch_all(
+                """select r.id, r.slug, r.name, r.manager_user_id, u.name as manager_name,
+                          (select count(*) from sites where region_id = r.id) as site_count
+                   from regions r
+                   left join users u on u.id = r.manager_user_id
+                   where r.org_id = $1 order by r.name""",
+                org_id,
+            )
+            return self._json(200, {"regions": rows})
+
+        # ─── Analytics surfaces ──────────────────────────────────
+        if method == "GET" and path == "/api/exec/kpis":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("org_admin", "region_manager", "sales_admin"):
+                return self._err(403, "forbidden")
+            return self._json(200, analytics.exec_kpis(org_id))
+
+        if method == "GET" and path == "/api/exec/growth":
+            sess = self._require_session()
+            if not sess: return
+            qs = parse_qs(url.query)
+            days = int((qs.get("days") or ["90"])[0])
+            return self._json(200, {"series": analytics.member_growth_series(org_id, days)})
+
+        if method == "GET" and path == "/api/exec/engagement-curve":
+            sess = self._require_session()
+            if not sess: return
+            return self._json(200, {"buckets": analytics.engagement_curve(org_id)})
+
+        if method == "GET" and path == "/api/exec/cohorts":
+            sess = self._require_session()
+            if not sess: return
+            return self._json(200, {"cohorts": analytics.cohort_retention(org_id)})
+
+        if method == "GET" and path == "/api/clubs/leaderboard":
+            sess = self._require_session()
+            if not sess: return
+            return self._json(200, {"clubs": analytics.clubs_leaderboard(org_id)})
+
+        if method == "GET" and path == "/api/trainers/performance":
+            sess = self._require_session()
+            if not sess: return
+            qs = parse_qs(url.query)
+            site = (qs.get("site_id") or [None])[0]
+            return self._json(200, {"trainers": analytics.trainer_performance(org_id, site)})
+
+        if method == "GET" and path == "/api/at-risk":
+            sess = self._require_session()
+            if not sess: return
+            qs = parse_qs(url.query)
+            return self._json(200, {"members": analytics.at_risk_members(
+                org_id,
+                site_id=(qs.get("site_id") or [None])[0],
+                trainer_id=(qs.get("trainer_id") or [None])[0],
+                limit=int((qs.get("limit") or ["50"])[0]),
+            )})
+
+        if method == "GET" and path == "/api/population-health":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("org_admin", "region_manager", "sales_admin"):
+                return self._err(403, "forbidden")
+            return self._json(200, analytics.population_health(org_id))
+
+        if method == "GET" and path == "/api/roster":
+            sess = self._require_session()
+            if not sess: return
+            qs = parse_qs(url.query)
+            return self._json(200, analytics.roster(
+                org_id,
+                search=(qs.get("q") or [None])[0],
+                site_id=(qs.get("site_id") or [None])[0],
+                trainer_id=(qs.get("trainer_id") or [None])[0],
+                risk_tier=(qs.get("risk_tier") or [None])[0],
+                limit=int((qs.get("limit") or ["100"])[0]),
+                offset=int((qs.get("offset") or ["0"])[0]),
+            ))
+
+        # ─── Per-member drill-down (audited) ─────────────────────
+        if method == "GET" and path.startswith("/api/members/") and path.endswith("/overview"):
             sess = self._require_session()
             if not sess: return
             member_id = path.split("/")[3]
-            row = db.fetch_one(
-                "select * from member_profiles where org_id = $1 and user_id = $2",
-                org_id, member_id,
-                org_id=org_id, user_id=sess["user_id"],
-                role=sess["role"], site_id=sess.get("site_id"),
-            )
-            if not row: return self._err(404, "not found")
+            data = analytics.member_overview(org_id, member_id)
+            if not data.get("user"): return self._err(404, "not found")
             audit_event(
                 org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
-                action="read_profile", resource_type="member_profile",
+                action="read_member_overview", resource_type="member",
                 resource_id=member_id, member_subject=member_id,
                 ip_hash=self._ip_hash(),
                 user_agent=self.headers.get("User-Agent", "")[:300],
             )
-            return self._json(200, {"profile": row})
+            return self._json(200, data)
+
+        if method == "GET" and path.startswith("/api/members/") and path.endswith("/audit"):
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("org_admin", "region_manager"):
+                return self._err(403, "forbidden")
+            member_id = path.split("/")[3]
+            return self._json(200, {"trail": analytics.member_audit_trail(org_id, member_id)})
+
+        # ─── Programs ─────────────────────────────────────────────
+        if method == "GET" and path == "/api/programs":
+            sess = self._require_session()
+            if not sess: return
+            return self._json(200, {"programs": analytics.list_programs(org_id)})
+
+        if method == "GET" and path.startswith("/api/programs/"):
+            sess = self._require_session()
+            if not sess: return
+            program_id = path.split("/")[3]
+            return self._json(200, analytics.program_detail(org_id, program_id))
+
+        if method == "POST" and path == "/api/programs":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] not in ("org_admin", "site_admin", "trainer"):
+                return self._err(403, "forbidden")
+            body = self._read_body()
+            row = db.fetch_one(
+                """insert into programs (org_id, created_by, name, slug, program_type,
+                                         duration_days, description, nutrition_json,
+                                         workouts_json, target_segment, is_org_wide)
+                   values ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10,$11)
+                   returning id""",
+                org_id, sess["user_id"],
+                body.get("name") or "Untitled program",
+                (body.get("slug") or secrets.token_hex(4)).lower(),
+                body.get("program_type") or "campaign",
+                int(body.get("duration_days") or 28),
+                body.get("description") or "",
+                json.dumps(body.get("nutrition") or {}),
+                json.dumps(body.get("workouts") or []),
+                body.get("target_segment"),
+                bool(body.get("is_org_wide", False)),
+            )
+            return self._json(201, {"id": row["id"]})
+
+        if method == "POST" and path.startswith("/api/programs/") and path.endswith("/enroll"):
+            sess = self._require_session()
+            if not sess: return
+            program_id = path.split("/")[3]
+            body = self._read_body()
+            member_id = body.get("member_id")
+            if not member_id: return self._err(400, "member_id required")
+            db.execute(
+                """insert into program_enrollments
+                   (org_id, program_id, member_id, assigned_by, started_at)
+                   values ($1,$2,$3,$4, current_date)
+                   on conflict do nothing""",
+                org_id, program_id, member_id, sess["user_id"],
+            )
+            return self._json(201, {"ok": True})
+
+        # ─── Messaging ────────────────────────────────────────────
+        if method == "GET" and path.startswith("/api/messages/"):
+            sess = self._require_session()
+            if not sess: return
+            member_id = path.split("/")[3]
+            rows = db.fetch_all(
+                """select id, body, sender_id, sent_at::text as sent_at, is_nudge, read_at::text as read_at
+                   from messages
+                   where org_id = $1 and member_id = $2
+                   order by sent_at""",
+                org_id, member_id,
+            )
+            return self._json(200, {"messages": rows})
+
+        if method == "POST" and path.startswith("/api/messages/"):
+            sess = self._require_session()
+            if not sess: return
+            member_id = path.split("/")[3]
+            body = self._read_body()
+            text = (body.get("body") or "").strip()[:5000]
+            if not text: return self._err(400, "body required")
+            tm = db.fetch_one(
+                """select trainer_id from trainer_members
+                   where org_id = $1 and member_id = $2 and status = 'active' limit 1""",
+                org_id, member_id,
+            )
+            trainer_id = (tm or {}).get("trainer_id") or sess["user_id"]
+            db.execute(
+                """insert into messages (org_id, trainer_id, member_id, sender_id, body, is_nudge)
+                   values ($1,$2,$3,$4,$5,$6)""",
+                org_id, trainer_id, member_id, sess["user_id"], text,
+                bool(body.get("is_nudge", False)),
+            )
+            return self._json(201, {"ok": True})
+
+        # ─── Schedule ─────────────────────────────────────────────
+        if method == "GET" and path == "/api/schedule":
+            sess = self._require_session()
+            if not sess: return
+            qs = parse_qs(url.query)
+            from_d = (qs.get("from") or [None])[0]
+            to_d   = (qs.get("to")   or [None])[0]
+            args: list[Any] = [org_id]
+            where = "org_id = $1"
+            if from_d:
+                args.append(from_d); where += f" and starts_at >= ${len(args)}"
+            if to_d:
+                args.append(to_d);   where += f" and starts_at <= ${len(args)}"
+            if sess["role"] == "trainer":
+                args.append(sess["user_id"])
+                where += f" and trainer_id = ${len(args)}"
+            rows = db.fetch_all(
+                f"""select id, trainer_id, member_id, title, location,
+                          starts_at::text as starts_at, ends_at::text as ends_at, status
+                   from schedule_sessions where {where}
+                   order by starts_at desc limit 200""",
+                *args,
+            )
+            return self._json(200, {"sessions": rows})
+
+        if method == "POST" and path == "/api/schedule":
+            sess = self._require_session()
+            if not sess: return
+            body = self._read_body()
+            row = db.fetch_one(
+                """insert into schedule_sessions
+                   (org_id, site_id, trainer_id, member_id, title, location, starts_at, ends_at)
+                   values ($1,$2,$3,$4,$5,$6,$7,$8) returning id""",
+                org_id, body.get("site_id"),
+                body.get("trainer_id") or sess["user_id"],
+                body.get("member_id"),
+                (body.get("title") or "Session")[:200],
+                (body.get("location") or "in-person")[:200],
+                body["starts_at"], body["ends_at"],
+            )
+            return self._json(201, {"id": row["id"]})
+
+        # ─── Member-facing endpoints (the end user app) ──────────
+        if method == "GET" and path == "/api/me/today":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            today = db.fetch_all(
+                """select totals_json from meals
+                   where org_id = $1 and member_id = $2 and log_date = current_date""",
+                org_id, sess["user_id"],
+            )
+            cals = sum(int((m.get("totals_json") or {}).get("calories", 0)) for m in today)
+            protein = sum(int((m.get("totals_json") or {}).get("protein", 0)) for m in today)
+            profile = db.fetch_one(
+                "select * from member_profiles where org_id = $1 and user_id = $2",
+                org_id, sess["user_id"],
+            )
+            unread = db.fetch_one(
+                """select count(*)::int as n from messages
+                   where org_id = $1 and member_id = $2 and sender_id != $2 and read_at is null""",
+                org_id, sess["user_id"],
+            )
+            next_session = db.fetch_one(
+                """select id, title, starts_at::text as starts_at, location
+                   from schedule_sessions
+                   where org_id = $1 and member_id = $2 and starts_at > now()
+                     and status = 'scheduled'
+                   order by starts_at limit 1""",
+                org_id, sess["user_id"],
+            )
+            engagement = db.fetch_one(
+                "select score, risk_tier, days_active_30 from engagement_score where org_id = $1 and member_id = $2",
+                org_id, sess["user_id"],
+            )
+            return self._json(200, {
+                "today": {
+                    "calories": cals,
+                    "protein": protein,
+                    "calorie_target": int((profile or {}).get("weight_kg") or 70) * 30,
+                    "protein_target": int((profile or {}).get("weight_kg") or 70) * 1.6,
+                },
+                "profile": profile,
+                "unread_messages": (unread or {}).get("n", 0),
+                "next_session": next_session,
+                "engagement": engagement,
+            })
+
+        if method == "POST" and path == "/api/me/meal":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            body = self._read_body()
+            items = body.get("items") or []
+            totals = {
+                "calories": sum(int(i.get("calories") or 0) for i in items),
+                "protein":  sum(int(i.get("protein")  or 0) for i in items),
+                "carbs":    sum(int(i.get("carbs")    or 0) for i in items),
+                "fat":      sum(int(i.get("fat")      or 0) for i in items),
+            }
+            db.execute(
+                """insert into meals (org_id, member_id, log_date, items_json, totals_json, source)
+                   values ($1,$2, current_date, $3::jsonb, $4::jsonb, $5)""",
+                org_id, sess["user_id"],
+                json.dumps(items), json.dumps(totals),
+                (body.get("source") or "manual"),
+            )
+            return self._json(201, {"ok": True, "totals": totals})
+
+        if method == "POST" and path == "/api/me/biometric":
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            body = self._read_body()
+            db.execute(
+                """insert into biometrics
+                   (org_id, member_id, reading_at, weight_kg, glucose_mgdl,
+                    bp_systolic, bp_diastolic, heart_rate_bpm, source)
+                   values ($1,$2, now(),$3,$4,$5,$6,$7,$8)""",
+                org_id, sess["user_id"],
+                body.get("weight_kg"), body.get("glucose_mgdl"),
+                body.get("bp_systolic"), body.get("bp_diastolic"),
+                body.get("heart_rate_bpm"),
+                body.get("source") or "manual",
+            )
+            return self._json(201, {"ok": True})
+
+        # ─── Sales-side super-admin (separate auth) ──────────────
+        if path.startswith("/api/sales/"):
+            return sales.handle(self, org, method, path, url)
 
         return self._err(404, "not found")
 
     def _serve_org_app(self, org: dict) -> None:
         """Inject the brand payload into app.html and serve."""
-        full = _here("app.html")
+        return self._serve_branded(org, "app.html")
+
+    def _serve_member_app(self, org: dict) -> None:
+        return self._serve_branded(org, "member.html")
+
+    def _serve_branded(self, org: dict, fname: str) -> None:
+        full = _here(fname)
         if not os.path.exists(full):
-            return self._err(500, "app missing")
+            return self._err(500, f"{fname} missing")
         with open(full, "r") as f:
             html = f.read()
         brand_js = (
