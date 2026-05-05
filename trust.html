@@ -87,7 +87,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
     <div class="card">
       <span class="badge">Active</span>
       <h3>Encryption</h3>
-      <p>AES-256 at rest (Supabase managed), TLS 1.2+ in transit with HSTS preload, customer-managed encryption keys (CMK) on Enterprise+ tier.</p>
+      <p>AES-256 at rest with managed-key infrastructure, TLS 1.2+ in transit with HSTS preload, customer-managed encryption keys (CMK) on Enterprise+ tier.</p>
     </div>
   </div>
 </div>
@@ -95,15 +95,14 @@ li{margin-bottom:8px;color:var(--text-dim)}
 <div class="wrap">
   <section>
     <h2>Sub-processors</h2>
-    <p class="lead-2">ELH Health engages the following sub-processors. We notify customers 30 days before adding any new sub-processor that processes PHI.</p>
+    <p class="lead-2">A complete list of sub-processors — including provider names, purpose, region, and BAA coverage — is provided to every customer under the Data Processing Addendum (DPA) at contract signing. We notify customers 30 days before adding any new sub-processor that processes PHI.</p>
     <table>
-      <tr><th>Provider</th><th>Purpose</th><th>Region</th><th>BAA-covered</th></tr>
-      <tr><td>Supabase</td><td>Primary database, auth, file storage</td><td>US East (us-east-1)</td><td>✓</td></tr>
-      <tr><td>Render</td><td>Application hosting</td><td>US West (Oregon)</td><td>✓</td></tr>
-      <tr><td>Resend</td><td>Transactional email</td><td>US</td><td>✓</td></tr>
-      <tr><td>Sentry</td><td>Error monitoring (PII-scrubbed)</td><td>US</td><td>✓</td></tr>
-      <tr><td>Stripe</td><td>Billing / Invoices (no PHI)</td><td>US</td><td>n/a</td></tr>
-      <tr><td>Anthropic</td><td>AI nutrition / content (only with explicit consent)</td><td>US</td><td>✓</td></tr>
+      <tr><th>Category</th><th>Purpose</th><th>Region</th><th>BAA-covered</th></tr>
+      <tr><td>Primary infrastructure</td><td>Database, authentication, application hosting, file storage</td><td>US (multi-region)</td><td>✓</td></tr>
+      <tr><td>Transactional email</td><td>Account &amp; system notifications</td><td>US</td><td>✓</td></tr>
+      <tr><td>Error monitoring</td><td>PII-scrubbed application telemetry</td><td>US</td><td>✓</td></tr>
+      <tr><td>Billing</td><td>Invoicing &amp; payment processing (no PHI)</td><td>US</td><td>n/a</td></tr>
+      <tr><td>AI &amp; nutrition intelligence</td><td>Photo macro estimation &amp; content generation (consent-gated)</td><td>US</td><td>✓</td></tr>
     </table>
   </section>
 

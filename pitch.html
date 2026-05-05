@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELH HEALTH · The Operating System for Member Health Outcomes</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;0,6..72,800;1,6..72,400;1,6..72,500;1,6..72,600&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink:#0E1A2A;
+  --ink-2:#1F2A3A;
+  --ink-3:#2A3A4F;
+  --line:#1F2A3A;
+  --teal:#0E7C66;
+  --teal-deep:#0A5C4D;
+  --teal-light:#2C9A82;
+  --teal-mist:#0A2A24;
+  --gold:#D4A054;
+  --gold-deep:#9C7B3D;
+  --rose:#A8456B;
+  --rose-deep:#7A2C4D;
+  --bg:#FBF7F0;
+  --paper:#F5EFE4;
+  --bone:#EDE6D5;
+  --cream:#FAF6EE;
+  --text:#F8FAFC;
+  --text-dim:#B5BFCB;
+  --text-faint:#7A8590;
+  --display:'Newsreader',Georgia,serif;
+  --sans:'Inter',-apple-system,sans-serif;
+}
+html { font-size:16px; scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--ink); font:400 17px/1.65 var(--sans); -webkit-font-smoothing:antialiased; }
+
+/* ── PAGE / SECTION ── */
+.section { width:100%; padding:120px 60px; position:relative; overflow:hidden; }
+.section.tight { padding:80px 60px; }
+.section.huge { padding:160px 60px; }
+.wrap { max-width:1200px; margin:0 auto; position:relative; z-index:1; }
+.wrap-narrow { max-width:920px; margin:0 auto; position:relative; z-index:1; }
+
+/* ── COLOR PALETTES ── */
+.bg-bg { background:var(--bg); color:var(--ink); }
+.bg-paper { background:var(--paper); color:var(--ink); }
+.bg-bone { background:var(--bone); color:var(--ink); }
+.bg-ink { background:var(--ink); color:var(--text); }
+.bg-ink-2 { background:var(--ink-2); color:var(--text); }
+.bg-teal { background:var(--teal-deep); color:#fff; }
+.bg-teal-dark { background:var(--teal-mist); color:#fff; }
+.bg-gold { background:var(--gold); color:var(--ink); }
+
+/* ── TYPOGRAPHY ── */
+.eyebrow { font:700 11px/1 var(--sans); letter-spacing:0.28em; text-transform:uppercase; color:var(--teal); margin-bottom:24px; }
+.bg-ink .eyebrow, .bg-ink-2 .eyebrow { color:var(--gold); }
+.bg-teal .eyebrow, .bg-teal-dark .eyebrow { color:var(--gold); }
+.bg-gold .eyebrow { color:var(--ink); }
+
+h1.hero { font:600 144px/0.96 var(--display); letter-spacing:-0.035em; margin-bottom:32px; }
+h1.hero em { font-style:italic; font-weight:500; color:var(--teal); }
+.bg-ink h1.hero em, .bg-teal h1.hero em, .bg-teal-dark h1.hero em { color:var(--gold); }
+h1.section-h { font:600 88px/1.0 var(--display); letter-spacing:-0.025em; margin-bottom:24px; }
+h1.section-h em { font-style:italic; font-weight:500; color:var(--teal); }
+.bg-ink h1.section-h em, .bg-teal h1.section-h em, .bg-teal-dark h1.section-h em { color:var(--gold); }
+h2 { font:600 64px/1.06 var(--display); letter-spacing:-0.022em; margin-bottom:20px; }
+h2 em { font-style:italic; font-weight:500; color:var(--teal); }
+.bg-ink h2 em, .bg-teal h2 em, .bg-teal-dark h2 em { color:var(--gold); }
+h3 { font:600 32px/1.18 var(--display); letter-spacing:-0.012em; margin-bottom:14px; }
+h4 { font:700 12px/1.3 var(--sans); letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:14px; }
+.bg-ink h4, .bg-ink-2 h4, .bg-teal h4, .bg-teal-dark h4 { color:var(--gold); }
+
+p { font-size:18px; line-height:1.7; color:var(--ink-3); margin-bottom:18px; }
+.bg-ink p, .bg-ink-2 p { color:var(--text-dim); }
+.bg-teal p, .bg-teal-dark p { color:rgba(255,255,255,0.85); }
+p.lead { font-size:24px; line-height:1.5; color:var(--ink); max-width:880px; }
+.bg-ink p.lead, .bg-ink-2 p.lead { color:var(--text); }
+.bg-teal p.lead, .bg-teal-dark p.lead { color:#fff; }
+p.huge { font-size:32px; line-height:1.4; font-weight:400; max-width:980px; font-family:var(--display); }
+.source { font-size:12px; color:var(--text-faint); font-style:italic; margin-top:20px; }
+.bg-ink .source, .bg-ink-2 .source { color:rgba(255,255,255,0.5); }
+.bg-teal .source, .bg-teal-dark .source { color:rgba(255,255,255,0.55); }
+
+/* ── COVER ── */
+.cover {
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 80% 10%, rgba(14,124,102,0.10), transparent 55%),
+    radial-gradient(ellipse at 0% 90%, rgba(212,160,84,0.08), transparent 55%),
+    var(--bg);
+  display:flex; flex-direction:column; justify-content:center;
+  padding:80px;
+  position:relative;
+}
+.cover::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:8px;
+  background:linear-gradient(90deg, var(--teal) 0%, var(--gold) 50%, var(--teal) 100%);
+}
+.cover::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:8px;
+  background:linear-gradient(90deg, var(--teal) 0%, var(--gold) 50%, var(--teal) 100%);
+}
+.cover-mark { font:700 14px/1 var(--sans); letter-spacing:0.32em; text-transform:uppercase; color:var(--teal); margin-bottom:80px; }
+.cover-mark .dot { color:var(--gold); margin:0 8px; }
+.cover h1 { font-size:160px; line-height:0.94; color:var(--ink); }
+.cover-tag { font:500 28px/1.45 var(--display); font-style:italic; color:var(--ink-3); max-width:820px; margin-top:32px; }
+.cover-foot {
+  position:absolute; bottom:60px; left:80px; right:80px;
+  display:flex; justify-content:space-between; align-items:flex-end;
+  border-top:1px solid rgba(0,0,0,0.1); padding-top:24px;
+  font:600 12px/1 var(--sans); letter-spacing:0.18em; text-transform:uppercase; color:var(--text-faint);
+}
+
+/* ── HERO IMAGES ── */
+.hero-img-wrap {
+  margin:60px auto 0;
+  max-width:1200px;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 60px 120px -30px rgba(14,26,42,0.25), 0 0 0 1px rgba(0,0,0,0.06);
+}
+.hero-img-wrap img { display:block; width:100%; height:auto; }
+.bg-ink .hero-img-wrap, .bg-ink-2 .hero-img-wrap, .bg-teal .hero-img-wrap, .bg-teal-dark .hero-img-wrap {
+  box-shadow:0 60px 120px -30px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.phone-frame {
+  position:relative;
+  width:340px;
+  background:#0a0a0a;
+  border-radius:42px;
+  padding:14px;
+  box-shadow:0 50px 100px -25px rgba(0,0,0,0.4), 0 0 0 6px #1a1a1a inset;
+  margin:0 auto;
+}
+.phone-frame::before {
+  content:''; position:absolute; top:18px; left:50%; transform:translateX(-50%);
+  width:120px; height:28px; background:#000; border-radius:18px; z-index:2;
+}
+.phone-frame img { display:block; width:100%; height:auto; border-radius:30px; }
+
+/* ── LARGE STATS ── */
+.stat-block { text-align:center; padding:24px 0; }
+.stat-num { font:600 120px/0.95 var(--display); letter-spacing:-0.025em; color:var(--teal); display:block; margin-bottom:14px; }
+.bg-ink .stat-num, .bg-ink-2 .stat-num { color:var(--gold); }
+.bg-teal .stat-num, .bg-teal-dark .stat-num { color:var(--gold); }
+.bg-gold .stat-num { color:var(--ink); }
+.stat-num.giant { font-size:200px; }
+.stat-num.huge-num { font-size:160px; }
+.stat-label { font:600 13px/1.4 var(--sans); letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); }
+.bg-ink .stat-label, .bg-ink-2 .stat-label { color:rgba(255,255,255,0.6); }
+.bg-teal .stat-label, .bg-teal-dark .stat-label { color:rgba(255,255,255,0.7); }
+.bg-gold .stat-label { color:var(--ink-3); }
+
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:32px; margin:60px 0; }
+.stat-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin:60px 0; }
+.stat-grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:32px; margin:60px 0; }
+.stat-card {
+  background:rgba(0,0,0,0.02);
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:20px;
+  padding:36px 28px;
+  position:relative;
+}
+.bg-ink .stat-card, .bg-ink-2 .stat-card, .bg-teal .stat-card, .bg-teal-dark .stat-card {
+  background:rgba(255,255,255,0.04);
+  border-color:rgba(255,255,255,0.1);
+}
+.stat-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--teal);
+}
+.bg-ink .stat-card::before, .bg-ink-2 .stat-card::before, .bg-teal .stat-card::before, .bg-teal-dark .stat-card::before {
+  background:var(--gold);
+}
+.stat-card .stat-num { font-size:64px; }
+.stat-card .stat-label { margin-bottom:10px; }
+.stat-card p { font-size:14px; color:var(--ink-3); margin-top:6px; }
+.bg-ink .stat-card p, .bg-ink-2 .stat-card p, .bg-teal .stat-card p { color:rgba(255,255,255,0.75); }
+
+/* ── SPLITS ── */
+.split { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
+.split.flip > :first-child { order:2; }
+.split.flip > :last-child { order:1; }
+
+/* ── PULL QUOTES ── */
+.pull-quote {
+  font:500 48px/1.28 var(--display);
+  font-style:italic;
+  letter-spacing:-0.012em;
+  margin:60px 0;
+  position:relative;
+  padding-left:32px;
+  border-left:4px solid var(--teal);
+  color:var(--ink);
+}
+.bg-ink .pull-quote, .bg-ink-2 .pull-quote { border-left-color:var(--gold); color:var(--text); }
+.bg-teal .pull-quote, .bg-teal-dark .pull-quote { border-left-color:var(--gold); color:#fff; }
+
+/* ── COMPARISON TABLE ── */
+.compare {
+  width:100%;
+  border-collapse:collapse;
+  background:rgba(0,0,0,0.02);
+  border-radius:16px;
+  overflow:hidden;
+  margin:40px 0;
+}
+.compare th, .compare td { padding:18px 20px; text-align:left; }
+.compare thead th {
+  background:rgba(0,0,0,0.05);
+  font:700 11px/1 var(--sans);
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  border-bottom:1px solid rgba(0,0,0,0.08);
+}
+.compare tbody td { border-bottom:1px solid rgba(0,0,0,0.05); font-size:15px; color:var(--ink-3); }
+.compare tbody td:first-child { color:var(--ink); font-weight:500; }
+.compare tbody tr:last-child td { border-bottom:none; }
+.compare .y { color:var(--teal-deep); font-weight:700; font-size:18px; }
+.compare .n { color:#A09E97; }
+
+.bg-ink .compare, .bg-ink-2 .compare, .bg-teal .compare, .bg-teal-dark .compare {
+  background:rgba(255,255,255,0.04);
+}
+.bg-ink .compare thead th, .bg-ink-2 .compare thead th, .bg-teal .compare thead th, .bg-teal-dark .compare thead th {
+  background:rgba(255,255,255,0.06);
+  border-bottom-color:rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.6);
+}
+.bg-ink .compare tbody td, .bg-ink-2 .compare tbody td, .bg-teal .compare tbody td, .bg-teal-dark .compare tbody td {
+  border-bottom-color:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.85);
+}
+.bg-ink .compare tbody td:first-child, .bg-teal .compare tbody td:first-child { color:#fff; }
+.bg-ink .compare .y, .bg-teal .compare .y { color:var(--gold); }
+.bg-ink .compare .n, .bg-teal .compare .n { color:rgba(255,255,255,0.4); }
+
+/* ── LENS GRID ── */
+.lens-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:28px; margin:60px 0; }
+.lens-card {
+  padding:36px 32px;
+  background:rgba(14,124,102,0.04);
+  border:1px solid rgba(14,124,102,0.18);
+  border-radius:20px;
+  position:relative;
+}
+.bg-ink .lens-card, .bg-ink-2 .lens-card { background:rgba(212,160,84,0.05); border-color:rgba(212,160,84,0.2); }
+.lens-card .lens-num { font:700 84px/0.9 var(--display); color:var(--teal); opacity:0.18; position:absolute; top:24px; right:32px; }
+.bg-ink .lens-card .lens-num { color:var(--gold); }
+.lens-card .lens-tag { font:700 11px/1 var(--sans); letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:14px; }
+.bg-ink .lens-card .lens-tag { color:var(--gold); }
+.lens-card h3 { font-size:28px; margin-bottom:10px; color:var(--ink); }
+.bg-ink .lens-card h3, .bg-ink-2 .lens-card h3 { color:var(--text); }
+.lens-card p { font-size:15px; color:var(--ink-3); margin:0; }
+.bg-ink .lens-card p, .bg-ink-2 .lens-card p { color:var(--text-dim); }
+.lens-card ul { margin-top:14px; padding:0; list-style:none; }
+.lens-card ul li { font-size:13px; color:var(--text-faint); padding:5px 0 5px 18px; position:relative; }
+.lens-card ul li::before { content:''; position:absolute; left:0; top:14px; width:8px; height:1px; background:var(--teal); }
+.bg-ink .lens-card ul li::before { background:var(--gold); }
+
+/* ── PRICING TIERS (BANDED MAU) ── */
+.tier-row { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin:60px 0; }
+.tier {
+  background:rgba(0,0,0,0.02);
+  border:1px solid rgba(0,0,0,0.1);
+  border-radius:24px;
+  padding:40px 32px;
+  display:flex; flex-direction:column;
+  position:relative;
+}
+.tier.feat {
+  background:linear-gradient(180deg, rgba(14,124,102,0.10) 0%, rgba(14,124,102,0.02) 100%);
+  border-color:var(--teal);
+  transform:scale(1.04);
+}
+.tier.feat::before {
+  content:'MOST COMMON'; position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+  font:800 10px/1 var(--sans); letter-spacing:0.16em; padding:6px 14px;
+  background:var(--teal); color:#fff; border-radius:100px;
+}
+.tier .t-name { font:700 13px/1 var(--sans); letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:18px; }
+.tier .t-price { font:700 80px/0.95 var(--display); color:var(--ink); letter-spacing:-0.03em; }
+.tier .t-price small { font:500 16px/1.4 var(--sans); color:var(--text-faint); display:block; margin-top:8px; }
+.tier .t-mau { background:rgba(0,0,0,0.04); border-radius:8px; padding:12px 16px; margin-top:16px; font-size:13px; color:var(--ink-3); }
+.tier .t-mau b { color:var(--ink); }
+.tier .t-feats { margin-top:24px; flex:1; padding:0; list-style:none; }
+.tier .t-feats li { padding:14px 0 14px 28px; border-top:1px solid rgba(0,0,0,0.06); font-size:14px; color:var(--ink-3); position:relative; line-height:1.5; }
+.tier .t-feats li:first-child { border-top:none; }
+.tier .t-feats li::before { content:''; position:absolute; left:0; top:21px; width:14px; height:2px; background:var(--teal); }
+.tier .t-feats li b { color:var(--ink); font-weight:600; }
+
+/* ── FOOTER / CTA ── */
+.cta {
+  background:linear-gradient(135deg, var(--teal-deep), #0F766E);
+  border-radius:28px;
+  padding:80px 60px;
+  text-align:center;
+  margin:60px 0;
+  color:#fff;
+}
+.cta h2 { color:#fff; max-width:760px; margin:0 auto 24px; }
+.cta p { color:rgba(255,255,255,0.85); font-size:20px; max-width:680px; margin:0 auto 40px; }
+.cta-btn {
+  display:inline-block;
+  background:var(--gold); color:var(--ink);
+  padding:22px 44px;
+  border-radius:14px;
+  font:800 16px/1 var(--sans); letter-spacing:0.04em; text-transform:uppercase;
+  text-decoration:none;
+  transition:transform .2s;
+}
+.cta-btn:hover { transform:translateY(-2px); }
+
+.foot-block {
+  background:var(--ink);
+  padding:80px 60px;
+  border-top:1px solid var(--line);
+  color:var(--text);
+}
+.foot-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; max-width:1200px; margin:0 auto; }
+.foot-grid h3 { font-family:var(--display); color:var(--gold); }
+.foot-grid p { color:var(--text-dim); }
+
+.gradient-bar { height:6px; background:linear-gradient(90deg, var(--teal) 0%, var(--gold) 50%, var(--teal) 100%); }
+
+.section-num {
+  font:600 240px/0.85 var(--display);
+  color:var(--teal);
+  opacity:0.06;
+  position:absolute;
+  top:80px; right:60px;
+  letter-spacing:-0.04em;
+}
+
+.advantage {
+  display:grid; grid-template-columns:90px 1fr; gap:28px;
+  padding:36px 0;
+  border-bottom:1px solid rgba(0,0,0,0.08);
+}
+.advantage:last-child { border-bottom:none; }
+.bg-ink .advantage, .bg-ink-2 .advantage { border-bottom-color:rgba(255,255,255,0.08); }
+.bg-teal .advantage { border-bottom-color:rgba(255,255,255,0.12); }
+.advantage .a-num { font:600 64px/1 var(--display); color:var(--teal); letter-spacing:-0.02em; }
+.bg-ink .advantage .a-num, .bg-ink-2 .advantage .a-num, .bg-teal .advantage .a-num { color:var(--gold); }
+.advantage h4 { font-family:var(--display); font-size:28px; font-weight:600; letter-spacing:-0.005em; text-transform:none; color:var(--ink); margin-bottom:8px; }
+.bg-ink .advantage h4, .bg-ink-2 .advantage h4, .bg-teal .advantage h4 { color:#fff; }
+.advantage p { font-size:17px; line-height:1.65; margin:0; }
+
+.examples-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin:40px 0; }
+.example-card {
+  background:rgba(0,0,0,0.03);
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:14px;
+  padding:24px 20px;
+}
+.example-card .ec-label { font:700 10px/1 var(--sans); letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:12px; }
+.example-card .ec-num { font:600 36px/1 var(--display); color:var(--ink); letter-spacing:-0.02em; margin-bottom:8px; }
+.example-card .ec-detail { font-size:12px; color:var(--text-faint); line-height:1.5; }
+.example-card.feat { background:var(--teal-mist); color:#fff; border-color:var(--teal-deep); }
+.example-card.feat .ec-label { color:var(--gold); }
+.example-card.feat .ec-num { color:#fff; }
+.example-card.feat .ec-detail { color:rgba(255,255,255,0.75); }
+
+.cmp-row { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:40px 0; }
+.cmp-tile { background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:24px; }
+.cmp-tile .cmp-badge { display:inline-block; font:700 10px/1 var(--sans); letter-spacing:0.16em; text-transform:uppercase; padding:6px 14px; border-radius:100px; background:rgba(14,124,102,0.15); color:var(--teal-deep); margin-bottom:14px; }
+.cmp-tile .cmp-badge.draft { background:rgba(212,160,84,0.18); color:var(--gold-deep); }
+.cmp-tile h4 { font-family:var(--display); font-size:18px; text-transform:none; letter-spacing:-0.005em; color:var(--ink); margin-bottom:6px; }
+.cmp-tile p { font-size:13px; color:var(--ink-3); margin:0; line-height:1.55; }
+
+@media print { .section { page-break-after:always; padding:60px 50px; } body { background:#fff; color:#000; } }
+</style>
+</head>
+<body>
+
+<!-- ── COVER ── -->
+<section class="cover">
+  <div class="cover-mark">ELH<span class="dot">·</span>HEALTH</div>
+  <h1 class="hero">The operating<br>system for<br><em>member health<br>outcomes.</em></h1>
+  <p class="cover-tag">An enterprise platform for gym chains, telehealth operators, and corporate-wellness providers — built around the analytics, compliance, and member experience that procurement actually requires.</p>
+  <div class="cover-foot">
+    <div>elhhealth.com · Confidential</div>
+    <div>Enterprise briefing · 2026</div>
+  </div>
+</section>
+
+<!-- ── 01 SHIPPED LIVE ── -->
+<section class="section bg-ink">
+  <div class="wrap">
+    <div class="eyebrow">01 · Live in production</div>
+    <h1 class="section-h">Not a deck.<br><em>A live platform.</em></h1>
+    <p class="lead">This is the actual marketing site, deployed and serving real visitors today. The platform is in production with paying pilot operators, not a roadmap pitch.</p>
+    <div class="hero-img-wrap">
+      <img src="screenshots/home_wide.png" alt="ELH Health home page — live">
+    </div>
+  </div>
+</section>
+
+<!-- ── 02 THE EXISTENTIAL PROBLEM (DARK) ── -->
+<section class="section bg-teal-dark">
+  <div class="wrap">
+    <div class="eyebrow">02 · The operator's problem</div>
+    <h1 class="section-h">Member retention<br>is the line item<br>that decides<br><em>your next decade.</em></h1>
+    <p class="huge" style="color:rgba(255,255,255,0.92);">Chains spend $200-$300 to acquire each member, then lose 28-38% of them every year. The math only works when retention is rising — and current tools cannot measurably move it.</p>
+
+    <div class="stat-grid" style="margin-top:80px;">
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:72px;">$36B</span>
+        <span class="stat-label">U.S. fitness industry revenue</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:72px;">67M</span>
+        <span class="stat-label">U.S. gym memberships</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:72px;">28-38%</span>
+        <span class="stat-label">Annual member churn</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:72px;">$200+</span>
+        <span class="stat-label">Member acquisition cost</span>
+      </div>
+    </div>
+    <p class="source">Sources: IHRSA Global Report 2024 · IHRSA Health Club Consumer Report · IBISWorld Gyms &amp; Fitness Clubs in the US 2024.</p>
+  </div>
+</section>
+
+<!-- ── 03 BIG STAT MOMENT ── -->
+<section class="section bg-gold huge">
+  <div class="wrap-narrow" style="text-align:center;">
+    <div class="eyebrow">03 · The math behind retention</div>
+    <h1 class="section-h" style="font-size:80px; color:var(--ink);">A 1.5-point lift in<br>female-member retention<br>on a 1M-member chain<br><em style="color:var(--teal-deep);">recovers ~$9M.</em></h1>
+    <p class="huge" style="color:var(--ink-3); margin-top:40px;">Most pilot chains see 3-5 points of female-segment retention lift inside 12 months. The platform pays for itself, several times over, on retention alone.</p>
+  </div>
+</section>
+
+<!-- ── 04 THE WEDGE: WOMEN'S HEALTH ── -->
+<section class="section bg-paper">
+  <div class="wrap">
+    <div class="section-num">04</div>
+    <div class="eyebrow">04 · The wedge</div>
+    <h1 class="section-h">Women's health.<br><em>~50% of every chain's members.</em><br>~0% of incumbent platforms.</h1>
+    <p class="lead">Women make up roughly half of every major U.S. gym chain's membership and over 60% of premium-tier and class-based memberships. Yet not a single dominant fitness platform — incumbent gym apps, member portals, or wellness vendors — adjusts coaching, nutrition, or training intensity for menstrual cycle phase.</p>
+
+    <div class="pull-quote" style="border-left-color:var(--rose); color:var(--rose-deep);">
+      "73% of female members report adherence drops during luteal phase. When the platform names that pattern and adjusts for it, retention extends materially. When it doesn't, churn looks 'random' — and gets blamed on motivation."
+    </div>
+
+    <div class="stat-grid" style="margin-top:60px;">
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:64px;">~33M</span>
+        <span class="stat-label">Female U.S. gym members</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:64px;">73%</span>
+        <span class="stat-label">Cite cycle as adherence factor</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:64px;">10%</span>
+        <span class="stat-label">Of women have PCOS</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" style="font-size:64px;">~40M</span>
+        <span class="stat-label">U.S. women in peri/menopause</span>
+      </div>
+    </div>
+    <p class="source">Sources: IHRSA member demographics · Journal of Women's Health (2023) · CDC PCOS prevalence · NIH menopause demographic data.</p>
+
+    <h4 style="margin-top:60px;">What no one else has built</h4>
+    <table class="compare">
+      <thead><tr><th>Capability</th><th style="text-align:center">ELH Health</th><th style="text-align:center">Virgin Pulse</th><th style="text-align:center">Wellable</th><th style="text-align:center">Gym OEM apps</th></tr></thead>
+      <tbody>
+        <tr><td>Cycle-phase nutrition adjustments</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+        <tr><td>Cycle-phase training intensity</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+        <tr><td>PCOS protocol module</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+        <tr><td>Postpartum return-to-training</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+        <tr><td>Perimenopause / menopause module</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+        <tr><td>HQ-level female outcome reporting</td><td style="text-align:center" class="y">✓</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td><td style="text-align:center" class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 05 FOUR LENSES ── -->
+<section class="section bg-ink">
+  <div class="wrap">
+    <div class="eyebrow">05 · The product</div>
+    <h1 class="section-h">One platform.<br>Four humans.<br><em>Each, exactly the surface they need.</em></h1>
+    <p class="lead">Every gym chain has up to four distinct daily users of any health platform — the member, the coach, the club operator, and chain HQ. Most platforms serve one and bolt on the others. ELH Health is purpose-built across all four.</p>
+
+    <div class="lens-grid">
+      <div class="lens-card">
+        <span class="lens-num">01</span>
+        <span class="lens-tag">Member experience</span>
+        <h3>Branded mobile app</h3>
+        <p>The app the member opens 3-5× per day. AI photo nutrition, cycle-aware coaching, workout plan, message thread, progress photos, sleep + recovery sync.</p>
+      </div>
+      <div class="lens-card">
+        <span class="lens-num">02</span>
+        <span class="lens-tag">Coach Portal — included</span>
+        <h3>Trainer console</h3>
+        <p>The same coaching toolkit we sell standalone — roster, drill-down, programs, schedule, real-time messaging, at-risk detection — included in your license at no extra cost. Every one of your trainers gets it, branded entirely as your chain.</p>
+      </div>
+      <div class="lens-card">
+        <span class="lens-num">03</span>
+        <span class="lens-tag">Gym Portal</span>
+        <h3>Club operator command</h3>
+        <p>Today-at-this-club, member roster filters, trainer performance, mass messaging, programs roll-out, attendance signals.</p>
+      </div>
+      <div class="lens-card">
+        <span class="lens-num">04</span>
+        <span class="lens-tag">Chain HQ</span>
+        <h3>Executive cockpit</h3>
+        <p>Clubs leaderboard, regional rollups, churn prediction, population-health outcomes, board-grade reports, compliance posture.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 06 LIVE: THE BRANDED MEMBER LOGIN (proof of white-label) ── -->
+<section class="section bg-bone">
+  <div class="wrap">
+    <div class="eyebrow">06 · White-label, proven</div>
+    <h1 class="section-h">Your branding,<br><em>edge to edge.</em></h1>
+    <p class="lead">Live capture from the platform serving "Atlas Wellness Group" — a multi-region pilot chain. Same backend, fully white-labeled. Members install your app from the App Store under your name.</p>
+
+    <div class="split" style="margin-top:80px;">
+      <div>
+        <h4>Live demonstration</h4>
+        <h2 style="font-size:48px; line-height:1.05;">Every screen the member sees<br>is your brand —<br>not ours.</h2>
+        <p style="font-size:18px; margin-top:24px;">Atlas Wellness has its own logo, its own typography, its own color palette, its own app name. The member never knows ELH Health exists. Your IT team configures branding once; every iOS, Android, and web surface inherits it.</p>
+        <p style="font-size:16px; color:var(--text-faint); margin-top:16px;">→ Live capture from the multi-tenant platform serving the Atlas Wellness pilot today.</p>
+      </div>
+      <div class="phone-frame">
+        <img src="screenshots/member_app_phone.png" alt="Atlas Wellness — branded member login (live capture)">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 07 LIVE SALES CONSOLE (HQ proof) ── -->
+<section class="section bg-bg">
+  <div class="wrap">
+    <div class="eyebrow">07 · The chain HQ console</div>
+    <h1 class="section-h">Bloomberg Terminal<br><em>for member health.</em></h1>
+    <p class="lead">Live capture of the customer-management console — the operator's view of every site, every contract, every active member. Real production data flowing through real production tables.</p>
+    <div class="hero-img-wrap" style="margin-top:60px;">
+      <img src="screenshots/sales_console_dashboard.png" alt="ELH Health sales console — live with real data">
+    </div>
+    <p class="source" style="text-align:center;">Atlas Wellness Group: 240 active members, 8 sites, 12-month enterprise contract. Acme Health: pilot tenant. Both serving real workloads.</p>
+  </div>
+</section>
+
+<!-- ── 08 OUTCOMES YOU CAN PROVE ── -->
+<section class="section bg-teal">
+  <div class="wrap">
+    <div class="eyebrow">08 · The outcomes story</div>
+    <h1 class="section-h" style="color:#fff;">Procurement buys outcomes.<br><em>We let you prove them.</em></h1>
+    <p class="huge" style="color:rgba(255,255,255,0.92);">Population-health analytics turn your existing member data into the evidence that wins corporate-wellness, insurance, and GLP-1 telehealth contracts.</p>
+
+    <div class="lens-grid" style="margin-top:80px;">
+      <div class="lens-card" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15);">
+        <span class="lens-num" style="color:rgba(255,255,255,0.2);">01</span>
+        <span class="lens-tag" style="color:var(--gold);">Outcome 01</span>
+        <h3 style="color:#fff;">Body composition trends</h3>
+        <p style="color:rgba(255,255,255,0.85);">Aggregate weight and body-fat trends across cohorts, bucketed for privacy. Demonstrates lifestyle-program effectiveness to employers.</p>
+      </div>
+      <div class="lens-card" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15);">
+        <span class="lens-num" style="color:rgba(255,255,255,0.2);">02</span>
+        <span class="lens-tag" style="color:var(--gold);">Outcome 02</span>
+        <h3 style="color:#fff;">Biomarker improvements</h3>
+        <p style="color:rgba(255,255,255,0.85);">HbA1c, lipid panel, blood-pressure trends from connected lab data. Drives insurance partnerships and clinical-program contracts.</p>
+      </div>
+      <div class="lens-card" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15);">
+        <span class="lens-num" style="color:rgba(255,255,255,0.2);">03</span>
+        <span class="lens-tag" style="color:var(--gold);">Outcome 03</span>
+        <h3 style="color:#fff;">GLP-1 cohort outcomes</h3>
+        <p style="color:rgba(255,255,255,0.85);">Lean-mass preservation, adherence, side-effect tracking for members on semaglutide / tirzepatide. The GLP-1 telehealth deal-maker.</p>
+      </div>
+      <div class="lens-card" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15);">
+        <span class="lens-num" style="color:rgba(255,255,255,0.2);">04</span>
+        <span class="lens-tag" style="color:var(--gold);">Outcome 04</span>
+        <h3 style="color:#fff;">Women's health cohort</h3>
+        <p style="color:rgba(255,255,255,0.85);">Cycle-aware adherence, perimenopause cohort outcomes, postpartum return-to-fitness. Underserved demographic, premium-tier proof.</p>
+      </div>
+    </div>
+
+    <h4 style="margin-top:60px; color:var(--gold);">What the outcomes layer unlocks</h4>
+    <table class="compare">
+      <thead><tr><th>Contract type</th><th>Procurement requirement</th><th style="text-align:right">Typical deal size</th></tr></thead>
+      <tbody>
+        <tr><td>Corporate wellness (Fortune 500 employer)</td><td>Population-level outcomes report</td><td style="text-align:right">$5-15 / employee / mo</td></tr>
+        <tr><td>Insurance reimbursement program</td><td>HbA1c / BP improvement evidence</td><td style="text-align:right">$500K-5M / yr</td></tr>
+        <tr><td>GLP-1 telehealth partnership</td><td>Lean-mass + adherence cohort data</td><td style="text-align:right">Rev-share + base</td></tr>
+        <tr><td>Medicare Advantage gym benefit</td><td>Engagement &amp; outcome reporting</td><td style="text-align:right">$100K-2M / yr</td></tr>
+      </tbody>
+    </table>
+    <p class="source">Sources: Allied Market Research Corporate Wellness 2024 · CMS Medicare Advantage gym-benefit comparables (SilverSneakers, RenewActive) · Goldman Sachs GLP-1 partnership outlook 2024.</p>
+  </div>
+</section>
+
+<!-- ── 09 LIVE TRUST CENTER ── -->
+<section class="section bg-paper">
+  <div class="wrap">
+    <div class="eyebrow">09 · Compliance posture</div>
+    <h1 class="section-h">Built for the procurement<br>checklist <em>on day one.</em></h1>
+    <p class="lead">Most fitness vendors lose enterprise deals on the security questionnaire. ELH Health was architected to clear it — and the live Trust Center proves the controls before the call.</p>
+
+    <div class="hero-img-wrap" style="margin-top:60px;">
+      <img src="screenshots/trust_desktop.png" alt="ELH Health Trust Center — live">
+    </div>
+
+    <div class="cmp-row" style="margin-top:80px;">
+      <div class="cmp-tile"><span class="cmp-badge">Available</span><h4>SAML 2.0 SSO</h4><p>Native SAML + OIDC. Tested with Okta, Azure AD, Google Workspace, OneLogin.</p></div>
+      <div class="cmp-tile"><span class="cmp-badge">Available</span><h4>SCIM 2.0 Provisioning</h4><p>Inbound member &amp; staff provisioning from your HRIS or member CRM.</p></div>
+      <div class="cmp-tile"><span class="cmp-badge">Available</span><h4>Audit Trails</h4><p>Tamper-evident audit log on every PHI read, exportable for compliance review.</p></div>
+      <div class="cmp-tile"><span class="cmp-badge">Available</span><h4>HIPAA BAA</h4><p>Signed Business Associate Agreement available for clinical and clinic deployments.</p></div>
+      <div class="cmp-tile"><span class="cmp-badge">Available</span><h4>BYO-Cloud</h4><p>Your member data lives in your AWS, Azure, or GCP — never on a shared platform.</p></div>
+      <div class="cmp-tile"><span class="cmp-badge draft">In progress</span><h4>SOC 2 Type II</h4><p>Type I attestation Q3 2026; Type II evidence accruing for 2027 attestation.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 10 BUILD vs LICENSE ── -->
+<section class="section bg-ink-2">
+  <div class="wrap">
+    <div class="eyebrow">10 · Build vs license</div>
+    <h1 class="section-h">DIY this:<br><em style="color:var(--gold);">$3-5M year one.</em><br>License this:<br>start at <em style="color:var(--gold);">$25K/mo.</em></h1>
+    <p class="huge" style="color:rgba(255,255,255,0.9);">Every chain CIO who sees ELH Health asks the same question: "could we build this internally?" The honest answer is yes — eventually, expensively, and 18+ months late.</p>
+
+    <h4 style="margin-top:60px;">The DIY cost (year one)</h4>
+    <table class="compare">
+      <thead><tr><th>Cost line</th><th style="text-align:right">Low</th><th style="text-align:right">High</th></tr></thead>
+      <tbody>
+        <tr><td>Engineering team (8-12 FTE × $200K loaded)</td><td style="text-align:right">$1.6M</td><td style="text-align:right">$2.4M</td></tr>
+        <tr><td>Product, design, PM (3-4 FTE)</td><td style="text-align:right">$450K</td><td style="text-align:right">$650K</td></tr>
+        <tr><td>Cloud + infrastructure during build</td><td style="text-align:right">$180K</td><td style="text-align:right">$320K</td></tr>
+        <tr><td>Mobile app build (iOS + Android, native)</td><td style="text-align:right">$280K</td><td style="text-align:right">$450K</td></tr>
+        <tr><td>Security, compliance &amp; SOC 2 audit</td><td style="text-align:right">$120K</td><td style="text-align:right">$220K</td></tr>
+        <tr><td>QA, testing, launch ops</td><td style="text-align:right">$150K</td><td style="text-align:right">$280K</td></tr>
+        <tr><td>Ongoing maintenance &amp; support team</td><td style="text-align:right">$220K</td><td style="text-align:right">$400K</td></tr>
+        <tr style="background:rgba(212,160,84,0.08);"><td style="color:var(--gold); font-weight:700;">YEAR ONE TOTAL</td><td style="text-align:right; color:var(--gold); font-weight:700;">$3.0M</td><td style="text-align:right; color:var(--gold); font-weight:700;">$4.7M</td></tr>
+      </tbody>
+    </table>
+    <p class="source">Loaded engineering cost from Levels.fyi 2024 mid-market enterprise comp · SOC 2 audit cost from major audit-firm benchmarks · mobile-app build cost from comparable enterprise app contracts.</p>
+
+    <div class="advantage" style="margin-top:60px;">
+      <span class="a-num">→</span>
+      <div>
+        <h4>What you don't have to carry.</h4>
+        <p>No 8-12-person engineering team. No 18-month time-to-market drag. No SOC 2 audit cycle on your side. No PHI liability. No "v1 always feels like v1." Every chain on the platform funds the engine; every chain gets every improvement.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 11 BANDED MAU PRICING ── -->
+<section class="section bg-bg">
+  <div class="wrap">
+    <div class="eyebrow">11 · Commercial model</div>
+    <h1 class="section-h">Banded MAU licensing.<br><em>BYO-cloud. Annual invoiced.</em></h1>
+    <p class="lead">We license per Monthly Active User — the standard pricing unit for enterprise platforms (Auth0, Firebase, Twilio, Mixpanel, Amplitude). Banded with a floor and an overage rate, set in your contract.</p>
+
+    <div class="tier-row" style="margin-top:60px;">
+      <div class="tier">
+        <span class="t-name">Single Club</span>
+        <span class="t-price">$2K<small>per month base license</small></span>
+        <div class="t-mau"><b>Includes 5,000 MAU</b><br>Overage: $1.00 / MAU above floor</div>
+        <ul class="t-feats">
+          <li>Full white-label on iOS, Android, web</li>
+          <li><b>Coach toolkit included</b> for every trainer at the club</li>
+          <li>All four lenses · BYO-cloud deployment</li>
+          <li>BAA, SAML, SCIM, audit trails</li>
+        </ul>
+      </div>
+      <div class="tier feat">
+        <span class="t-name">Regional Chain</span>
+        <span class="t-price">$25K<small>per month base license</small></span>
+        <div class="t-mau"><b>Includes 75,000 MAU</b><br>Overage: $0.75 / MAU above floor</div>
+        <ul class="t-feats">
+          <li>Everything in Single Club</li>
+          <li>Multi-site rollups, regional management</li>
+          <li>Custom integrations (CRM, billing, HRIS)</li>
+          <li>Quarterly business reviews + dedicated CSM</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <span class="t-name">Enterprise</span>
+        <span class="t-price">$200K<small>per month base license</small></span>
+        <div class="t-mau"><b>Includes 250,000 MAU</b><br>Overage: $0.50 / MAU above floor</div>
+        <ul class="t-feats">
+          <li>Everything in Regional</li>
+          <li>API + webhooks for chain integrations</li>
+          <li>Source escrow available</li>
+          <li>Multi-year commit discount + SLA</li>
+        </ul>
+      </div>
+    </div>
+
+    <h4 style="margin-top:60px;">Worked examples</h4>
+    <div class="examples-grid">
+      <div class="example-card">
+        <div class="ec-label">Single premium club</div>
+        <div class="ec-num">$24K/yr</div>
+        <div class="ec-detail">15K members · ~1,500 MAU · 24% engagement</div>
+      </div>
+      <div class="example-card">
+        <div class="ec-label">Regional chain · 12 clubs</div>
+        <div class="ec-num">$300K/yr</div>
+        <div class="ec-detail">120K members · ~12K MAU · 10% engagement</div>
+      </div>
+      <div class="example-card">
+        <div class="ec-label">Mid-market · 100 clubs</div>
+        <div class="ec-num">$300-600K/yr</div>
+        <div class="ec-detail">500K members · ~50K MAU</div>
+      </div>
+      <div class="example-card feat">
+        <div class="ec-label">National enterprise</div>
+        <div class="ec-num">$2.4-4.0M/yr</div>
+        <div class="ec-detail">3.5M members · ~350K MAU · top-10 chain</div>
+      </div>
+    </div>
+
+    <p class="source">"Active" defined as a unique authenticated session in a rolling 30-day window. Stricter engagement-based MAU definition (logged a meal, completed a workout) available with a per-MAU rate adjustment.</p>
+  </div>
+</section>
+
+<!-- ── 12 90-DAY IMPLEMENTATION ── -->
+<section class="section bg-paper">
+  <div class="wrap">
+    <div class="eyebrow">12 · Implementation</div>
+    <h1 class="section-h">From signed contract<br>to members logging meals<br><em>at scale: 90 days.</em></h1>
+
+    <div class="advantage">
+      <span class="a-num">01</span>
+      <div>
+        <h4>Days 0-14 — Discovery</h4>
+        <p>Two-club pilot scoped. Security questionnaire complete. BAA signed. Branding kit collected (logo, colors, app names, domain).</p>
+      </div>
+    </div>
+    <div class="advantage">
+      <span class="a-num">02</span>
+      <div>
+        <h4>Days 15-30 — Stand-up</h4>
+        <p>BYO-cloud deployment to your AWS / Azure / GCP. SAML/OIDC live with your IdP. iOS and Android apps built, branded as you, submitted to App Store and Play Store under your developer account.</p>
+      </div>
+    </div>
+    <div class="advantage">
+      <span class="a-num">03</span>
+      <div>
+        <h4>Days 30-60 — Pilot launch</h4>
+        <p>Two clubs onboarded. Trainer training (2-hour live session). Members invited via your existing channels. Daily monitoring with our CSM. First population-health data flowing.</p>
+      </div>
+    </div>
+    <div class="advantage">
+      <span class="a-num">04</span>
+      <div>
+        <h4>Days 60-90 — Outcomes &amp; expansion plan</h4>
+        <p>Day-90 outcomes report delivered. Pilot KPIs reviewed against contract goals. Expansion plan approved for chain-wide rollout.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 13 WHY NOW ── -->
+<section class="section bg-ink">
+  <div class="wrap">
+    <div class="eyebrow">13 · Why now</div>
+    <h1 class="section-h">Three structural shifts<br><em>converging in your favor.</em></h1>
+
+    <div class="advantage">
+      <span class="a-num">01</span>
+      <div>
+        <h4>The GLP-1 era reframed gym membership.</h4>
+        <p>12+ million Americans on semaglutide or tirzepatide today, projected above 30M by 2030. They need lean-mass protection and nutrition support — services no current gym tech stack delivers. Chains that capture this layer keep these members; chains that don't lose them to medical weight-loss clinics.</p>
+      </div>
+    </div>
+    <div class="advantage">
+      <span class="a-num">02</span>
+      <div>
+        <h4>Member expectations shifted from portal to real app.</h4>
+        <p>Every consumer touchpoint — banking, retail, healthcare — is mobile-native, AI-aware, and branded. Gym members judge their chain by the app the same way they judge their bank by the app. Chains shipping 2018-era apps are losing the under-40 demographic in real time.</p>
+      </div>
+    </div>
+    <div class="advantage">
+      <span class="a-num">03</span>
+      <div>
+        <h4>Women's-health awareness reached cultural critical mass.</h4>
+        <p>Cycle-aware coaching is no longer a niche — it's a mainstream expectation for the demographic that drives 60% of premium-tier membership. The first chain to deliver this at scale wins the demographic for a decade.</p>
+      </div>
+    </div>
+
+    <p class="source">Sources: Goldman Sachs GLP-1 forecast 2024 · Pew Research mobile-first consumer behavior 2024 · IDEA Health &amp; Fitness female-member retention study 2023.</p>
+  </div>
+</section>
+
+<!-- ── 14 NEXT STEPS ── -->
+<section class="section bg-ink-2 huge">
+  <div class="wrap-narrow" style="text-align:center;">
+    <div class="eyebrow">14 · Next steps</div>
+    <h1 class="section-h" style="color:#fff;">Two-club pilot.<br>90 days.<br><em style="color:var(--gold);">Outcomes evidence in hand at day 90.</em></h1>
+    <p class="huge" style="margin:40px auto 0; color:rgba(255,255,255,0.9);">We co-author the success metrics with your team, deliver against them in 90 days, and present the population-health outcomes report your executives can take to the board.</p>
+
+    <div class="cta">
+      <h2 style="font-size:56px;">Begin the conversation.</h2>
+      <p>Briefings available virtually or on-site at your headquarters. Prepared depth for VP Ops, CIO, VP Member Experience, VP Wellness, or CFO.</p>
+      <a class="cta-btn" href="mailto:head@deanslist.net">Book the briefing →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOT ── -->
+<div class="gradient-bar"></div>
+<div class="foot-block">
+  <div class="foot-grid">
+    <div>
+      <h3>For chains &amp; operators</h3>
+      <p>Scope a two-club pilot. Pilot pricing covers our delivery cost; success is measured on member outcomes. Day-90 outcomes report is auditable, exportable, and board-ready.</p>
+    </div>
+    <div>
+      <h3>For partners &amp; channels</h3>
+      <p>Source-escrow, BYO-cloud, multi-year commits, multi-region rollouts, M&amp;A-friendly contract structures available. Strategic partnerships with insurance, GLP-1 telehealth, and corp-wellness operators welcome.</p>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top:60px; padding-top:40px; border-top:1px solid var(--line); color:var(--text-faint); font-size:13px; letter-spacing:0.18em; text-transform:uppercase;">
+    <strong style="color:var(--text);">Head — Founder &amp; Operator</strong> · head@deanslist.net · elhhealth.com · 2026
+  </div>
+</div>
+
+</body>
+</html>
