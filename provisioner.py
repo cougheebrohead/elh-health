@@ -315,6 +315,119 @@ def provision_demo(
     }
 
 
+def provision_customer(
+    *,
+    brand_name: str,
+    legal_name: str | None = None,
+    primary_color: str | None = None,
+    accent_color: str | None = None,
+    logo_url: str | None = None,
+    source_url: str | None = None,
+    scraped_brand: dict | None = None,
+    owner_email: str,
+    owner_name: str,
+    plan: str = "enterprise",
+    invoicing_email: str | None = None,
+    contract_value_usd: float | None = None,
+    custom_slug: str | None = None,
+    sales_owner: str | None = None,
+) -> dict:
+    """Stand up a REAL paying customer (not a sales demo).
+
+    Differences from provision_demo:
+      - is_demo = false (default), no demo_password, no expiry
+      - owner login uses the customer's real email + a temp password
+      - one default site instead of a 4-site fake roster
+      - no fake trainers, no fake members
+      - returns the subdomain URL + apex fallback URL
+    """
+    if not brand_name or len(brand_name.strip()) < 2:
+        return {"ok": False, "error": "brand_name is required"}
+    if not owner_email or "@" not in owner_email:
+        return {"ok": False, "error": "valid owner_email is required"}
+    if plan not in ("enterprise", "enterprise_plus"):
+        plan = "enterprise"
+
+    brand_name = brand_name.strip()
+    owner_email = owner_email.strip().lower()
+
+    # Slug: prefer customer's chosen slug, otherwise derived from name.
+    # Must satisfy ^[a-z0-9-]{2,60}$ on this product.
+    base = (custom_slug or slugify(brand_name) or "customer").strip("-")
+    base = SLUG_RE.sub("-", base.lower())[:60].strip("-")
+    if len(base) < 2:
+        base = "customer"
+
+    # If slug taken, suffix until clean
+    slug = base
+    while db.fetch_one("select id from orgs where slug = $1", slug):
+        slug = _unique_slug(base)
+
+    primary = _safe_color(primary_color, "#1F2A3A")
+    accent  = _safe_color(accent_color,  "#0E7C66")
+
+    org_row = db.fetch_one(
+        """insert into orgs
+           (slug, legal_name, display_name, logo_url, brand_primary, brand_accent,
+            plan, baa_signed_at, contract_value_usd, invoicing_email,
+            max_sites, max_members,
+            is_demo, created_via, source_url, scraped_brand, sales_owner)
+           values ($1,$2,$3,$4,$5,$6,$7,now(),$8,$9,$10,$11,
+                   false,'wizard-customer',$12,$13,$14)
+           returning id""",
+        slug,
+        legal_name or brand_name,
+        brand_name,
+        logo_url,
+        primary,
+        accent,
+        plan,
+        contract_value_usd,
+        invoicing_email or owner_email,
+        100, 500_000,
+        source_url,
+        json.dumps(scraped_brand) if scraped_brand else None,
+        sales_owner,
+    )
+    if not org_row:
+        return {"ok": False, "error": "org insert failed"}
+    org_id = org_row["id"]
+
+    # One default site so the dashboard isn't empty
+    db.execute(
+        """insert into sites (org_id, slug, name, timezone, address, member_seat_cap)
+           values ($1,'main',$2,'America/New_York','Main Location',5000)""",
+        org_id, f"{brand_name} — Main Location",
+    )
+
+    # Owner admin with a temp password the salesperson hands to the customer
+    temp_password = _gen_demo_password()
+    db.execute(
+        """insert into users (org_id, email, password_hash, role, name, is_active)
+           values ($1,$2,$3,'org_admin',$4,true)""",
+        org_id, owner_email, hash_password(temp_password), owner_name or owner_email,
+    )
+
+    return {
+        "ok": True,
+        "org_id": org_id,
+        "slug": slug,
+        "brand_name": brand_name,
+        # Subdomain URL (works on Render onrender.com hosts AND on the
+        # custom apex once Cloudflare Universal SSL clears for *.elhhealth.app)
+        "subdomain_url": f"https://{slug}.elhhealth.app",
+        # Apex-fallback URL that works on every host today
+        "apex_url": f"https://elh-health.onrender.com/?org={slug}",
+        "owner_email": owner_email,
+        "owner_temp_password": temp_password,
+        "next_steps": [
+            "Text the apex_url + temp password to the customer.",
+            "They sign in, change their password under Settings.",
+            "Once Cloudflare wildcard SSL clears, share the subdomain_url instead.",
+        ],
+    }
+
+
 def _suggested_arr(member_count: int | None) -> float:
     """Cheap heuristic: $0.50/MAU/mo × 12 — matches our enterprise pricing
     band so the dashboard ARR widget reads plausibly. Sales can override."""
