@@ -7,39 +7,41 @@
 <!--BRAND_INJECT-->
 <style>
 :root {
-  --primary: #0E1A2A;
-  --accent:  #0E7C66;
-  --accent-2:#0A5C4D;
-  --bg:      #FBFAF6;
-  --bg-card: #FFFFFF;
-  --bg-soft: #F4F2EC;
-  --border:  #E5E1DB;
-  --text:    #0E1A2A;
-  --text-dim:#4A5562;
-  --text-faint:#6B7480;
-  --good:    #0E7C66;
-  --warn:    #B45309;
-  --bad:     #B91C1C;
-  --serif:   'Newsreader','Iowan Old Style','Charter',Georgia,serif;
-  --sans:    'Inter',-apple-system,system-ui,'Segoe UI',sans-serif;
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer;border:none;background:transparent;color:inherit}
-a{color:var(--accent);text-decoration:none}
+a{color:var(--primary);text-decoration:none}
 
 /* ─── Layout ─── */
 .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 @media(max-width:920px){.app{grid-template-columns:1fr}}
-aside{background:var(--primary);color:#E7EAEF;padding:24px 0;display:flex;flex-direction:column;gap:4px;border-right:1px solid #1B2939}
+aside{background:var(--primary);color:#E7EAEF;padding:24px 0;display:flex;flex-direction:column;gap:4px;border-right:1px solid #E8E5DF}
 @media(max-width:920px){aside{display:none}}
 aside .brand{padding:0 24px 24px;font:600 22px var(--serif);letter-spacing:-0.01em;color:#fff;display:flex;align-items:center;gap:10px}
 aside .brand img{height:24px}
-aside nav button{display:flex;align-items:center;gap:12px;padding:10px 24px;color:#9DA8B5;font-size:14px;font-weight:500;width:100%;text-align:left;border-left:3px solid transparent;transition:all .12s}
+aside nav button{display:flex;align-items:center;gap:12px;padding:10px 24px;color:#5C5F66;font-size:14px;font-weight:500;width:100%;text-align:left;border-left:3px solid transparent;transition:all .12s}
 aside nav button:hover{color:#fff;background:rgba(255,255,255,0.04)}
-aside nav button.on{color:#fff;background:rgba(255,255,255,0.08);border-left-color:var(--accent)}
-aside .section{padding:18px 24px 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#5C6B7C;font-weight:700}
-aside .me{margin-top:auto;padding:18px 24px;border-top:1px solid #1B2939;font-size:13px;color:#9DA8B5}
+aside nav button.on{color:#fff;background:rgba(255,255,255,0.08);border-left-color:var(--primary)}
+aside .section{padding:18px 24px 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#5C5F66;font-weight:700}
+aside .me{margin-top:auto;padding:18px 24px;border-top:1px solid #E8E5DF;font-size:13px;color:#5C5F66}
 aside .me .name{color:#fff;font-weight:600;margin-bottom:2px}
 aside .me .role{font-size:11px;text-transform:uppercase;letter-spacing:0.06em}
 
@@ -49,14 +51,14 @@ main{padding:32px 36px;max-width:1440px;width:100%;overflow-x:hidden}
 .head h1{font:500 32px/1.05 var(--serif);letter-spacing:-0.02em}
 .head .sub{color:var(--text-dim);font-size:14px;margin-top:6px}
 .head .actions{display:flex;gap:8px}
-.btn{padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;background:var(--accent);color:#fff;border:1px solid var(--accent);transition:background .12s}
+.btn{padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;background:var(--primary);color:#fff;border:1px solid var(--primary);transition:background .12s}
 .btn:hover{background:var(--accent-2);border-color:var(--accent-2)}
 .btn.ghost{background:transparent;color:var(--text);border-color:var(--border)}
 .btn.ghost:hover{border-color:var(--text-dim);background:transparent}
 .btn.sm{padding:6px 11px;font-size:12px;border-radius:6px}
 
 input,select,textarea{font:inherit;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);outline:none;transition:border-color .12s}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input:focus,select:focus,textarea:focus{border-color:var(--primary)}
 
 /* ─── Cards / KPI ─── */
 .row{display:grid;gap:18px}
@@ -110,7 +112,7 @@ tbody tr td:first-child{font-weight:600}
 /* ─── Member detail ─── */
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin:-8px -4px 24px;padding:0 4px;overflow-x:auto}
 .tabs button{padding:12px 18px;color:var(--text-dim);font-weight:500;font-size:14px;border-bottom:2px solid transparent;white-space:nowrap}
-.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tabs button.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
 
 /* ─── Modal ─── */
 .modal{position:fixed;inset:0;background:rgba(14,26,42,0.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
@@ -180,7 +182,7 @@ label.field input,label.field select,label.field textarea{width:100%}
     <div class="me">
       <div class="name" id="me-name">—</div>
       <div class="role" id="me-role">—</div>
-      <a href="#" onclick="doLogout();return false" style="color:#9DA8B5;font-size:12px;display:block;margin-top:8px">Sign out</a>
+      <a href="#" onclick="doLogout();return false" style="color:#5C5F66;font-size:12px;display:block;margin-top:8px">Sign out</a>
     </div>
   </aside>
 
@@ -198,7 +200,7 @@ label.field input,label.field select,label.field textarea{width:100%}
 /* ═══════════════════════════════════════════════════════════════════
    Brand + bootstrap
    ═══════════════════════════════════════════════════════════════════ */
-const BRAND = window.__BRAND__ || {name:'ELH Health',primary:'#0E1A2A',accent:'#0E7C66',sso_required:false};
+const BRAND = window.__BRAND__ || {name:'ELH Health',primary:'#0A1628',accent:'#0A1628',sso_required:false};
 document.documentElement.style.setProperty('--primary', BRAND.primary);
 document.documentElement.style.setProperty('--accent',  BRAND.accent);
 document.title = BRAND.app_name || BRAND.name;
@@ -348,7 +350,7 @@ function bars(canvas, labels, values, color) {
     ctx.fillRect(x, padY + innerH - h, bw, h);
   });
   // Labels
-  ctx.fillStyle = '#6B7480'; ctx.font = (10*devicePixelRatio) + 'px Inter';
+  ctx.fillStyle = '#8A8E94'; ctx.font = (10*devicePixelRatio) + 'px Inter';
   ctx.textAlign = 'center';
   labels.forEach((l,i) => {
     const x = padX + i * (bw + gap) + bw/2;
@@ -450,11 +452,11 @@ VIEWS.executive = { title: 'Executive Overview', async render() {
   // Charts
   sparkline(document.getElementById('growthChart'),
             (growth.series||[]).map(s => s.new_members),
-            '#0E7C66');
+            '#0A1628');
   bars(document.getElementById('engChart'),
        (eng.buckets||[]).map(b => b.bucket_min + '+'),
        (eng.buckets||[]).map(b => b.n),
-       '#0E7C66');
+       '#0A1628');
 }};
 
 VIEWS.clubs = { title: 'Clubs leaderboard', async render() {
@@ -702,7 +704,7 @@ async function openMember(memberId) {
 
   // Render weight chart
   const ws = (d.weight_series||[]).slice().reverse().map(w => Number(w.weight_kg));
-  if (ws.length) sparkline(document.getElementById('m-weight'), ws, '#0E7C66');
+  if (ws.length) sparkline(document.getElementById('m-weight'), ws, '#0A1628');
 }
 
 async function loadMemberAudit(memberId) {

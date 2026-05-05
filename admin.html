@@ -6,24 +6,30 @@
 <title>ELH Health — Sales Console</title>
 <style>
 :root {
-  --primary: #0E1A2A;
-  --accent:  #0E7C66;
-  --bg:      #FBFAF6;
-  --bg-card: #fff;
-  --bg-soft: #F4F2EC;
-  --border:  #E5E1DB;
-  --text:    #0E1A2A;
-  --text-dim:#4A5562;
-  --text-faint:#6B7480;
-  --serif: 'Newsreader',Georgia,serif;
-  --sans:  'Inter',-apple-system,system-ui,sans-serif;
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer;border:none;background:transparent;color:inherit}
 .head{padding:24px 36px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fff}
 .head .brand{font:500 22px var(--serif);letter-spacing:-0.01em}
-.head .brand b{color:var(--accent);font-weight:500}
+.head .brand b{color:var(--primary);font-weight:500}
 .head .me{font-size:13px;color:var(--text-dim)}
 main{padding:32px 36px;max-width:1300px;margin:0 auto}
 .head-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
@@ -36,9 +42,9 @@ h1{font:500 32px var(--serif);letter-spacing:-0.02em}
 .kpi .val{font:500 32px var(--serif);letter-spacing:-0.01em}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px}
 .tabs button{padding:12px 20px;color:var(--text-dim);font-weight:500;border-bottom:2px solid transparent;font-size:14px}
-.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
-.btn{padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;background:var(--accent);color:#fff}
-.btn:hover{background:#0A5C4D}
+.tabs button.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.btn{padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;background:var(--primary);color:#fff}
+.btn:hover{background:#1B2A40}
 .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
 .btn.sm{padding:6px 11px;font-size:12px}
 .tbl{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -55,7 +61,7 @@ tr:hover{background:var(--bg-soft);cursor:pointer}
 label.field{display:block;margin-bottom:14px}
 label.field .lab{font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;display:block}
 input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--border);border-radius:8px;width:100%;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input:focus,select:focus,textarea:focus{border-color:var(--primary)}
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:32px;max-width:420px;width:100%}
 .login-card h1{font:500 26px var(--serif);margin-bottom:8px}
@@ -68,7 +74,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .pill.negotiating{background:#FEF3C7;color:#92400E}
 .pill.won{background:#D1FAE5;color:#065F46}
 .pill.lost{background:#FEE2E2;color:#991B1B}
-.pill.cold{background:#F4F2EC;color:#6B7480}
+.pill.cold{background:#FAFAF8;color:#8A8E94}
 </style>
 </head>
 <body>
@@ -76,7 +82,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 <!-- LOGIN -->
 <div id="login" class="login hidden">
   <div class="login-card">
-    <h1>ELH Health <b style="color:var(--accent);font-weight:500">Sales Console</b></h1>
+    <h1>ELH Health <b style="color:var(--primary);font-weight:500">Sales Console</b></h1>
     <p class="muted" style="margin-bottom:20px">Internal use. Authorized personnel only.</p>
     <label class="field"><span class="lab">Email</span><input id="email" type="email" autocomplete="email"></label>
     <label class="field"><span class="lab">Password</span><input id="password" type="password" autocomplete="current-password"></label>

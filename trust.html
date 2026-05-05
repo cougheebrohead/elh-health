@@ -7,9 +7,23 @@
 <meta name="description" content="ELH Health security, compliance, sub-processors, and the controls your auditors are about to ask for.">
 <style>
 :root {
-  --bg:#FDFBF7; --bg-card:#FFFFFF; --border:#E5E1DB;
-  --text:#0E1A2A; --text-dim:#4A5562; --text-faint:#6B7480;
-  --accent:#0E7C66; --serif:'Newsreader',Georgia,serif;
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font:17px/1.7 'Inter',-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
@@ -17,7 +31,7 @@ body{background:var(--bg);color:var(--text);font:17px/1.7 'Inter',-apple-system,
 .logo{font:600 22px var(--serif)}
 .nav a{color:var(--text-dim);text-decoration:none;margin-left:24px;font-size:14px}
 .wrap{max-width:980px;margin:0 auto;padding:64px 24px}
-.eyebrow{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px}
+.eyebrow{font-size:12px;font-weight:700;color:var(--primary);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:16px}
 h1{font:500 56px/1.05 var(--serif);letter-spacing:-0.02em;margin-bottom:14px;max-width:760px}
 .lede{font-size:21px;color:var(--text-dim);max-width:680px;margin-bottom:48px;line-height:1.5}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:32px 0}
@@ -25,7 +39,7 @@ h1{font:500 56px/1.05 var(--serif);letter-spacing:-0.02em;margin-bottom:14px;max
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px}
 .card h3{font:500 18px var(--serif);margin-bottom:8px}
 .card p{font-size:14px;color:var(--text-dim);line-height:1.55}
-.card .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:100px;background:rgba(14,124,102,0.1);color:var(--accent);margin-bottom:12px}
+.card .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:100px;background:rgba(10,22,40,0.1);color:var(--primary);margin-bottom:12px}
 .card .badge.draft{background:rgba(180,83,9,0.12);color:#92400E}
 section{padding:48px 0;border-top:1px solid var(--border)}
 section h2{font:500 32px var(--serif);letter-spacing:-0.015em;margin-bottom:14px}
@@ -33,10 +47,10 @@ section .lead-2{color:var(--text-dim);max-width:680px;margin-bottom:24px}
 table{width:100%;border-collapse:collapse;font-size:14px;margin-top:18px}
 th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--border)}
 th{font-weight:600;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
-td a{color:var(--accent);text-decoration:none}
+td a{color:var(--primary);text-decoration:none}
 .req{display:flex;flex-direction:column;gap:14px;max-width:640px;margin-top:24px}
 .req input,.req textarea{padding:12px 14px;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff}
-.req button{padding:12px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;width:fit-content}
+.req button{padding:12px 22px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;width:fit-content}
 footer{padding:32px 24px;border-top:1px solid var(--border);text-align:center;color:var(--text-faint);font-size:13px}
 ul{padding-left:22px;margin:14px 0}
 li{margin-bottom:8px;color:var(--text-dim)}
@@ -124,7 +138,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 
   <section>
     <h2>Vulnerability disclosure</h2>
-    <p class="lead-2">Coordinated disclosure to <a href="mailto:security@elhhealth.app" style="color:var(--accent)">security@elhhealth.app</a>. We respond within one business day and credit reporters in our public security log. We do not yet run a paid bounty program, but we will reward novel and impactful reports at our discretion.</p>
+    <p class="lead-2">Coordinated disclosure to <a href="mailto:security@elhhealth.app" style="color:var(--primary)">security@elhhealth.app</a>. We respond within one business day and credit reporters in our public security log. We do not yet run a paid bounty program, but we will reward novel and impactful reports at our discretion.</p>
   </section>
 
   <section>
@@ -135,7 +149,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
       <input id="r-email" type="email" placeholder="Work email" required>
       <textarea id="r-note" placeholder="Anything specific you need?" rows="3"></textarea>
       <button type="submit">Request packet</button>
-      <div id="r-out" style="font-size:13px;color:var(--accent)"></div>
+      <div id="r-out" style="font-size:13px;color:var(--primary)"></div>
     </form>
   </section>
 </div>

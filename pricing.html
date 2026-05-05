@@ -5,7 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pricing — ELH Health</title>
 <style>
-:root { --bg:#FDFBF7; --text:#0E1A2A; --text-dim:#4A5562; --border:#E5E1DB; --accent:#0E7C66; --serif:'Newsreader',Georgia,serif; }
+:root {
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+}
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--bg); color:var(--text); font:17px/1.7 'Inter',-apple-system,sans-serif; }
 .nav { display:flex; justify-content:space-between; padding:18px 32px; border-bottom:1px solid var(--border); }
@@ -22,8 +40,8 @@ h1 { font:500 52px/1.05 var(--serif); letter-spacing:-0.02em; margin-bottom:12px
 ul { list-style:none; padding:0; margin:18px 0; }
 li { padding:10px 0 10px 22px; position:relative; border-bottom:1px solid var(--border); font-size:15px; }
 li:last-child { border-bottom:none; }
-li::before { content:'·'; position:absolute; left:6px; color:var(--accent); font-weight:700; font-size:18px; line-height:18px; }
-.btn { display:inline-block; padding:14px 24px; background:var(--accent); color:#fff; text-decoration:none; border-radius:8px; font-weight:600; }
+li::before { content:'·'; position:absolute; left:6px; color:var(--primary); font-weight:700; font-size:18px; line-height:18px; }
+.btn { display:inline-block; padding:14px 24px; background:var(--primary); color:#fff; text-decoration:none; border-radius:8px; font-weight:600; }
 table { width:100%; border-collapse:collapse; margin-top:64px; font-size:14px; }
 th, td { text-align:left; padding:14px 12px; border-bottom:1px solid var(--border); }
 th { font-weight:700; }
@@ -91,7 +109,7 @@ th { font-weight:700; }
     <tr><th>SLA credits</th><td>Pro-rata credits on missed availability or response targets</td></tr>
   </table>
 
-  <p style="margin-top:48px;color:var(--text-dim)">Pilot programs (3 months, single site, prepaid) are available case-by-case. Email <a href="mailto:hello@elhhealth.app" style="color:var(--accent)">hello@elhhealth.app</a> to discuss.</p>
+  <p style="margin-top:48px;color:var(--text-dim)">Pilot programs (3 months, single site, prepaid) are available case-by-case. Email <a href="mailto:hello@elhhealth.app" style="color:var(--primary)">hello@elhhealth.app</a> to discuss.</p>
 </div>
 
 </body>

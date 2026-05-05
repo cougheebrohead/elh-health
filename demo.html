@@ -5,7 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Book a demo — ELH Health</title>
 <style>
-:root { --bg:#FDFBF7; --text:#0E1A2A; --text-dim:#4A5562; --border:#E5E1DB; --accent:#0E7C66; --serif:'Newsreader',Georgia,serif; }
+:root {
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
+}
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--bg); color:var(--text); font:17px/1.7 'Inter',-apple-system,sans-serif; }
 .nav { display:flex; justify-content:space-between; padding:18px 32px; border-bottom:1px solid var(--border); }
@@ -17,12 +35,12 @@ h1 { font:500 44px/1.05 var(--serif); letter-spacing:-0.02em; margin-bottom:14px
 form { background:#fff; border:1px solid var(--border); border-radius:14px; padding:32px; }
 label { display:block; font-size:13px; font-weight:600; color:var(--text-dim); margin:14px 0 6px; }
 input, textarea { width:100%; padding:12px 14px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font:inherit; font-size:15px; }
-input:focus, textarea:focus { outline:none; border-color:var(--accent); }
+input:focus, textarea:focus { outline:none; border-color:var(--primary); }
 textarea { min-height:120px; resize:vertical; font-family:inherit; }
-.btn { width:100%; margin-top:20px; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:8px; font:inherit; font-weight:600; font-size:15px; cursor:pointer; }
-.btn:hover { background:#0A5C4D; }
-.error { margin-top:12px; padding:10px 14px; background:rgba(220,38,38,0.06); border:1px solid rgba(220,38,38,0.3); border-radius:8px; color:#dc2626; font-size:14px; }
-.success { background:rgba(14,124,102,0.06); border:1px solid rgba(14,124,102,0.3); border-radius:14px; padding:28px; }
+.btn { width:100%; margin-top:20px; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:8px; font:inherit; font-weight:600; font-size:15px; cursor:pointer; }
+.btn:hover { background:#1B2A40; }
+.error { margin-top:12px; padding:10px 14px; background:#FDEFEF; border:1px solid #FECACA; border-radius:8px; color:#dc2626; font-size:14px; }
+.success { background:rgba(10,22,40,0.06); border:1px solid rgba(10,22,40,0.3); border-radius:14px; padding:28px; }
 .success h2 { font:500 24px var(--serif); margin-bottom:8px; }
 </style>
 </head>
@@ -61,7 +79,7 @@ textarea { min-height:120px; resize:vertical; font-family:inherit; }
   </form>
   <div class="success" id="success" style="display:none">
     <h2>Thanks — we'll be in touch.</h2>
-    <p>You'll hear from us within one business day. In the meantime, the <a href="/security" style="color:var(--accent)">security brief</a> is the most useful read.</p>
+    <p>You'll hear from us within one business day. In the meantime, the <a href="/security" style="color:var(--primary)">security brief</a> is the most useful read.</p>
   </div>
 </div>
 

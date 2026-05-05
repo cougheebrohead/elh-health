@@ -3,24 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0E7C66">
+<meta name="theme-color" content="#0A1628">
 <title>Atlas Wellness</title>
 <!--BRAND_INJECT-->
 <style>
 :root {
-  --primary: #0E1A2A;
-  --accent:  #0E7C66;
-  --bg:      #FBFAF6;
-  --bg-card: #FFFFFF;
-  --bg-soft: #F4F2EC;
-  --border:  #E5E1DB;
-  --text:    #0E1A2A;
-  --text-dim:#4A5562;
-  --good:    #0E7C66;
-  --warn:    #B45309;
-  --bad:     #B91C1C;
-  --serif:   'Newsreader',Georgia,serif;
-  --sans:    'Inter',-apple-system,system-ui,sans-serif;
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --border:    #E8E5DF;
+  --border-soft:#F0EEE9;
+  --text:      #0A0A0C;
+  --text-dim:  #5C5F66;
+  --text-faint:#8A8E94;
+  --primary:   #0A1628;
+  --primary-2: #1B2A40;
+  --accent:    #3C4858;
+  --accent-2:  #5A6776;
+  --good:      #15803D;
+  --warn:      #B45309;
+  --bad:       #991B1B;
+  --serif:'Newsreader','Iowan Old Style','Charter',Georgia,serif;
+  --sans:'Inter',-apple-system,system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:var(--bg);color:var(--text);font:16px/1.5 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
@@ -67,7 +71,7 @@ header .avatar{width:36px;height:36px;border-radius:50%;background:var(--bg-soft
 /* ─── Bottom nav ─── */
 nav.tabbar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(18px);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 max(10px, env(safe-area-inset-bottom));z-index:50}
 nav.tabbar button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 12px;color:var(--text-dim);font-size:11px;font-weight:500}
-nav.tabbar button.on{color:var(--accent)}
+nav.tabbar button.on{color:var(--primary)}
 nav.tabbar button .icon{font-size:22px}
 
 /* ─── Login ─── */
@@ -75,7 +79,7 @@ nav.tabbar button .icon{font-size:22px}
 .login h1{font:500 32px var(--serif);margin-bottom:6px;color:var(--primary)}
 .login .lead{color:var(--text-dim);margin-bottom:28px}
 input[type=email],input[type=password]{display:block;width:100%;padding:13px 14px;background:#fff;border:1px solid var(--border);border-radius:10px;outline:none;margin-bottom:12px}
-.btn-primary{display:block;width:100%;padding:14px;background:var(--accent);color:#fff;border-radius:10px;font-weight:600;font-size:15px;margin-top:8px}
+.btn-primary{display:block;width:100%;padding:14px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600;font-size:15px;margin-top:8px}
 
 /* ─── Modal ─── */
 .modal{position:fixed;inset:0;background:rgba(14,26,42,0.55);display:none;align-items:flex-end;justify-content:center;z-index:100}
@@ -131,8 +135,8 @@ input[type=email],input[type=password]{display:block;width:100%;padding:13px 14p
       <div class="card ring-card">
         <div class="ring">
           <svg viewBox="0 0 100 100" width="200" height="200">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#E5E1DB" stroke-width="6"/>
-            <circle id="ring-prog" cx="50" cy="50" r="44" fill="none" stroke="var(--accent)"
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#E8E5DF" stroke-width="6"/>
+            <circle id="ring-prog" cx="50" cy="50" r="44" fill="none" stroke="var(--primary)"
                     stroke-width="6" stroke-linecap="round"
                     stroke-dasharray="276.46" stroke-dashoffset="276"/>
           </svg>
@@ -197,7 +201,7 @@ input[type=email],input[type=password]{display:block;width:100%;padding:13px 14p
         <h2>Privacy</h2>
         <p class="muted" style="font-size:14px;margin-bottom:14px">Your data is yours. View who's accessed your information, export everything, or request deletion.</p>
         <button class="btn-primary" onclick="alert('Audit log access requested — check your email in 24h.')">View my audit log</button>
-        <button class="btn-primary" style="margin-top:8px;background:#fff;color:var(--accent);border:1px solid var(--accent)" onclick="alert('Data export queued — JSON+CSV will email within 24h.')">Export my data</button>
+        <button class="btn-primary" style="margin-top:8px;background:#fff;color:var(--primary);border:1px solid var(--primary)" onclick="alert('Data export queued — JSON+CSV will email within 24h.')">Export my data</button>
       </div>
       <div class="card">
         <h2>Sign out</h2>
@@ -220,7 +224,7 @@ input[type=email],input[type=password]{display:block;width:100%;padding:13px 14p
 </div>
 
 <script>
-const BRAND = window.__BRAND__ || {name:'ELH Health',primary:'#0E1A2A',accent:'#0E7C66'};
+const BRAND = window.__BRAND__ || {name:'ELH Health',primary:'#0A1628',accent:'#0A1628'};
 document.documentElement.style.setProperty('--primary', BRAND.primary);
 document.documentElement.style.setProperty('--accent',  BRAND.accent);
 document.title = BRAND.app_name || BRAND.name;
@@ -355,7 +359,7 @@ async function loadMessages() {
     list.innerHTML = d.messages.map(m => {
       const mine = m.sender_id === me.user.id;
       return '<div style="margin:8px 0;display:flex;justify-content:'+(mine?'flex-end':'flex-start')+'">' +
-             '<div style="background:'+(mine?'var(--accent)':'var(--bg-card)')+';color:'+(mine?'#fff':'var(--text)')+';padding:10px 14px;border-radius:14px;max-width:80%;border:1px solid '+(mine?'var(--accent)':'var(--border)')+'">' +
+             '<div style="background:'+(mine?'var(--primary)':'var(--bg-card)')+';color:'+(mine?'#fff':'var(--text)')+';padding:10px 14px;border-radius:14px;max-width:80%;border:1px solid '+(mine?'var(--primary)':'var(--border)')+'">' +
              m.body +
              '<div style="font-size:11px;opacity:.7;margin-top:4px">'+new Date(m.sent_at).toLocaleString()+'</div></div></div>';
     }).join('');
@@ -384,7 +388,7 @@ function openLogMeal() {
     </div>
     <label><span class="lab">Fat (g)</span><input id="m-fat" type="number"></label>
     <button class="btn-primary" onclick="submitMeal()">Add to today</button>
-    <button class="btn-primary" style="background:#fff;color:var(--accent);border:1px solid var(--accent);margin-top:8px" onclick="closeModal()">Cancel</button>
+    <button class="btn-primary" style="background:#fff;color:var(--primary);border:1px solid var(--primary);margin-top:8px" onclick="closeModal()">Cancel</button>
   `;
   document.getElementById('modal').classList.add('on');
 }
@@ -410,7 +414,7 @@ function openLogWeight() {
     <p class="sub">Track trends, not days.</p>
     <label><span class="lab">Weight (kg)</span><input id="w-kg" type="number" step="0.1"></label>
     <button class="btn-primary" onclick="submitWeight()">Save</button>
-    <button class="btn-primary" style="background:#fff;color:var(--accent);border:1px solid var(--accent);margin-top:8px" onclick="closeModal()">Cancel</button>
+    <button class="btn-primary" style="background:#fff;color:var(--primary);border:1px solid var(--primary);margin-top:8px" onclick="closeModal()">Cancel</button>
   `;
   document.getElementById('modal').classList.add('on');
 }
