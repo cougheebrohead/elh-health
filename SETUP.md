@@ -1,8 +1,8 @@
-# Vitalstack — production setup
+# Heads Health Platform — production setup
 
 ## 1. Apply migrations
 
-Vitalstack Supabase project: **`skrxpiwhmafescfmlnrz`**.
+Heads Health Platform Supabase project: **`skrxpiwhmafescfmlnrz`**.
 
 ```bash
 export DATABASE_URL='postgres://postgres:<DB_PASSWORD>@db.skrxpiwhmafescfmlnrz.supabase.co:5432/postgres'
@@ -16,12 +16,12 @@ psql "$DATABASE_URL" -f migrations/0003_rls_policies.sql
 `render.yaml` is ready. Either:
 
 - **Dashboard:** https://dashboard.render.com/blueprint/new → connect
-  `cougheebrohead/vitalstack`. Add envs from `.env.example`.
+  `cougheebrohead/hhp`. Add envs from `.env.example`.
 - **CLI:** `render login && render services create blueprint render.yaml`.
 
 ## 3. DNS
 
-Apex `vitalstack.app` and wildcard `*.vitalstack.app` to the Render service.
+Apex `headshealth.app` and wildcard `*.headshealth.app` to the Render service.
 
 ## 4. SSO — finish the SAML signature validator before going live
 

@@ -1,4 +1,4 @@
-"""Vitalstack analytics — every query the dashboards depend on.
+"""Heads Health Platform analytics — every query the dashboards depend on.
 
 Each function returns plain dicts/lists (JSON-ready). Each is gated by org_id
 and parameterised so the same code drives org-admin, region-manager,

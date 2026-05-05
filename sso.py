@@ -73,7 +73,7 @@ def saml_login_url(org: dict[str, Any], acs_url: str, sp_entity_id: str) -> str:
 
 def saml_assert_callback(org: dict[str, Any], saml_response_b64: str,
                          ip: str | None = None, ua: str | None = None) -> str:
-    """Validate the IdP's SAMLResponse and issue a Vitalstack session.
+    """Validate the IdP's SAMLResponse and issue a Heads Health Platform session.
 
     For brevity this scaffolding parses the email out of the assertion and
     upserts the user. Production must validate the XML signature against

@@ -1,4 +1,4 @@
-"""Vitalstack — enterprise health platform server (stdlib HTTP).
+"""Heads Health Platform — enterprise health platform server (stdlib HTTP).
 
 Same shape as FitApp/CoachHQ — BaseHTTPRequestHandler, no framework. The
 key shape change vs CoachHQ is org_id/site_id GUC handling and the
@@ -6,13 +6,13 @@ PHI-read audit log on every member-data endpoint.
 
 Endpoints
 ─────────
-APEX (vitalstack.app):
+APEX (headshealth.app):
   GET  /                          marketing site
   GET  /pricing | /security | /demo
   POST /api/demo                  schedule a demo (writes lead)
   POST /api/admin/orgs            ELH-only: provision a new org
 
-ORG-SCOPED ({slug}.vitalstack.app):
+ORG-SCOPED ({slug}.headshealth.app):
   GET  /                          dashboard SPA (org-themed)
   POST /api/login                 password sign-in (if !sso_required)
   GET  /api/sso/login             302 to IdP (SAML/OIDC)
@@ -46,7 +46,7 @@ from urllib.parse import parse_qs, urlparse
 try:
     import fitapp_core  # noqa: F401
 except ImportError:
-    print("[Vitalstack] WARNING: fitapp-core not installed — install via requirements.txt", flush=True)
+    print("[HHP] WARNING: fitapp-core not installed — install via requirements.txt", flush=True)
 
 try:
     import sentry_sdk  # type: ignore
@@ -81,7 +81,7 @@ def _here(name: str) -> str:
 # ────────────────────────────────────────────────────────────────────
 
 class H(BaseHTTPRequestHandler):
-    server_version = "Vitalstack/1.0"
+    server_version = "HHP/1.0"
     sys_version = ""
 
     def log_message(self, fmt: str, *args: Any) -> None:
@@ -210,7 +210,7 @@ class H(BaseHTTPRequestHandler):
             if path == "/robots.txt":
                 return self._serve_static("robots.txt")
 
-        # Sales super-admin lives at the apex (sales.vitalstack.app/admin/...)
+        # Sales super-admin lives at the apex (sales.headshealth.app/admin/...)
         if path.startswith("/api/sales/"):
             return sales.handle(self, None, method, path, url)
         if method == "GET" and path in ("/admin", "/admin/"):
@@ -244,7 +244,7 @@ class H(BaseHTTPRequestHandler):
                     email, org_name, note, self._ip_hash(),
                 )
             except Exception as e:
-                print("[Vitalstack] demo insert error:", e, flush=True)
+                print("[HHP] demo insert error:", e, flush=True)
             return self._json(200, {"ok": True})
 
         return self._err(404, "not found")
@@ -775,7 +775,7 @@ class H(BaseHTTPRequestHandler):
 
 
 def main():
-    print(f"[Vitalstack] starting on :{PORT} env={ENV} apex={APEX}", flush=True)
+    print(f"[HHP] starting on :{PORT} env={ENV} apex={APEX}", flush=True)
     server = ThreadingHTTPServer(("0.0.0.0", PORT), H)
     server.serve_forever()
 

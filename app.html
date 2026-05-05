@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Vitalstack</title>
+<title>Heads Health Platform</title>
 <!--BRAND_INJECT-->
 <style>
 :root {
@@ -141,7 +141,7 @@ label.field input,label.field select,label.field textarea{width:100%}
 <!-- ─── LOGIN ─── -->
 <div id="login" class="login hidden">
   <div class="login-card">
-    <div class="brand" id="brand-login">Vitalstack</div>
+    <div class="brand" id="brand-login">Heads Health Platform</div>
     <p class="lead" id="login-lead">Sign in to your workspace.</p>
 
     <div id="sso-section">
@@ -159,7 +159,7 @@ label.field input,label.field select,label.field textarea{width:100%}
 <!-- ─── APP ─── -->
 <div id="app" class="app hidden">
   <aside>
-    <div class="brand"><span id="brand-name">Vitalstack</span></div>
+    <div class="brand"><span id="brand-name">Heads Health Platform</span></div>
     <div class="section">Operate</div>
     <nav>
       <button data-view="executive" class="on">📈 Executive</button>
@@ -198,7 +198,7 @@ label.field input,label.field select,label.field textarea{width:100%}
 /* ═══════════════════════════════════════════════════════════════════
    Brand + bootstrap
    ═══════════════════════════════════════════════════════════════════ */
-const BRAND = window.__BRAND__ || {name:'Vitalstack',primary:'#0E1A2A',accent:'#0E7C66',sso_required:false};
+const BRAND = window.__BRAND__ || {name:'Heads Health Platform',primary:'#0E1A2A',accent:'#0E7C66',sso_required:false};
 document.documentElement.style.setProperty('--primary', BRAND.primary);
 document.documentElement.style.setProperty('--accent',  BRAND.accent);
 document.title = BRAND.app_name || BRAND.name;
@@ -631,7 +631,7 @@ VIEWS.account = { title: 'Account', async render() {
     <div class="row k2">
       <div class="card">
         <h3>Branding</h3>
-        <div class="muted" style="font-size:13px;margin-top:8px">Configurable in your contract; reach out to support@vitalstack.app for changes.</div>
+        <div class="muted" style="font-size:13px;margin-top:8px">Configurable in your contract; reach out to support@headshealth.app for changes.</div>
         <div style="margin-top:14px"><b>Display name:</b> ${me.org.name}</div>
         <div><b>Plan:</b> ${me.org.plan}</div>
       </div>

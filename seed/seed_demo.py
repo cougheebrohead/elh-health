@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vitalstack demo seed.
+"""Heads Health Platform demo seed.
 
 Builds a believable multi-region gym chain — 'Atlas Wellness Group' —
 to stand up live demos. Idempotent: re-running won't duplicate.
@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("SUPABASE_URL", "https://skrxpiwhmafescfmlnrz.supabase.co")
 os.environ.setdefault(
     "SUPABASE_SERVICE_KEY",
-    open("/tmp/vitalstack_keys.env").read().split("SUPABASE_SERVICE_KEY=", 1)[1].strip(),
+    open("/tmp/hhp_keys.env").read().split("SUPABASE_SERVICE_KEY=", 1)[1].strip(),
 )
 
 from auth import hash_password

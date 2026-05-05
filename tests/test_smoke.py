@@ -1,4 +1,4 @@
-"""Vitalstack smoke tests — DB-free."""
+"""Heads Health Platform smoke tests — DB-free."""
 from __future__ import annotations
 
 import importlib

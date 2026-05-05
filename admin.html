@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vitalstack — Sales Console</title>
+<title>Heads Health Platform — Sales Console</title>
 <style>
 :root {
   --primary: #0E1A2A;
@@ -76,7 +76,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 <!-- LOGIN -->
 <div id="login" class="login hidden">
   <div class="login-card">
-    <h1>Vitalstack <b style="color:var(--accent);font-weight:500">Sales Console</b></h1>
+    <h1>Heads Health Platform <b style="color:var(--accent);font-weight:500">Sales Console</b></h1>
     <p class="muted" style="margin-bottom:20px">Internal use. Authorized personnel only.</p>
     <label class="field"><span class="lab">Email</span><input id="email" type="email" autocomplete="email"></label>
     <label class="field"><span class="lab">Password</span><input id="password" type="password" autocomplete="current-password"></label>
@@ -88,7 +88,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 <!-- APP -->
 <div id="app" class="hidden">
   <div class="head">
-    <div class="brand">Vitalstack <b>Sales Console</b></div>
+    <div class="brand">Heads Health Platform <b>Sales Console</b></div>
     <div class="me"><span id="me-name">—</span> · <a href="#" onclick="doLogout();return false">sign out</a></div>
   </div>
 
@@ -215,7 +215,7 @@ function loadOrgs(rows) {
   body.innerHTML = rows.map(o => {
     const ends = o.contract_ends ? new Date(o.contract_ends).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
     return `<tr onclick="impersonate('${o.id}','${o.slug}')">
-      <td><b>${o.display_name}</b><br><span class="muted" style="font-size:12px">${o.slug}.vitalstack.app</span></td>
+      <td><b>${o.display_name}</b><br><span class="muted" style="font-size:12px">${o.slug}.headshealth.app</span></td>
       <td><span class="pill new">${o.plan}</span></td>
       <td>${(o.members||0).toLocaleString()}</td>
       <td>${o.sites||0}</td>
@@ -252,7 +252,7 @@ function loadLeads(rows) {
 }
 
 async function impersonate(orgId, slug) {
-  if (!confirm('Open ' + slug + '.vitalstack.app as the org admin?\n(Audit-logged.)')) return;
+  if (!confirm('Open ' + slug + '.headshealth.app as the org admin?\n(Audit-logged.)')) return;
   try {
     const d = await api('/api/sales/orgs/'+orgId+'/impersonate', { method:'POST', body: JSON.stringify({reason:'sales demo'}) });
     if (d.token) {
@@ -265,7 +265,7 @@ async function impersonate(orgId, slug) {
 function openOrgModal() {
   document.getElementById('modal-body').innerHTML = `
     <h2>Provision new org</h2>
-    <p class="sub">A new tenant on the Vitalstack platform.</p>
+    <p class="sub">A new tenant on the Heads Health Platform platform.</p>
     <label class="field"><span class="lab">Slug (subdomain)</span><input id="o-slug" placeholder="acme"></label>
     <label class="field"><span class="lab">Display name</span><input id="o-display"></label>
     <label class="field"><span class="lab">Legal name</span><input id="o-legal"></label>

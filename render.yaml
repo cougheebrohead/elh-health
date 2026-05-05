@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vitalstack
+    name: hhp
     runtime: python
     region: oregon
     plan: starter
@@ -10,7 +10,7 @@ services:
     autoDeploy: true
     envVars:
       - key: APEX_HOST
-        value: vitalstack.app
+        value: headshealth.app
       - key: ENV
         value: production
       - key: PYTHON_VERSION

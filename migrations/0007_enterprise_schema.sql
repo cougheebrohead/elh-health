@@ -1,4 +1,4 @@
--- Vitalstack v2 — enterprise extensions for the buyer-demo platform.
+-- Heads Health Platform v2 — enterprise extensions for the buyer-demo platform.
 --
 -- Adds:
 --   • regions          (between org and site for multi-region chains)

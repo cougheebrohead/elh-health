@@ -210,7 +210,7 @@ def handle(handler, org: dict | None, method: str, path: str, url) -> None:
         )
         return handler._json(200, {
             "token": token,
-            "redirect_to": f"https://{db.fetch_one('select slug from orgs where id = $1', org_id)['slug']}.{handler.headers.get('Host','vitalstack.app').split(':')[0]}",
+            "redirect_to": f"https://{db.fetch_one('select slug from orgs where id = $1', org_id)['slug']}.{handler.headers.get('Host','headshealth.app').split(':')[0]}",
         })
 
     if method == "GET" and path == "/api/sales/leads":
