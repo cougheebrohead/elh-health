@@ -169,21 +169,19 @@ def _seed_lightweight(
         )
         if row: trainer_ids.append(row["id"])
 
-    # Members (60) sprinkled across sites with realistic age distribution
+    # Members (60) sprinkled across sites. Demographics live in
+    # member_profiles, not users — the dashboards key off counts +
+    # engagement, which our lightweight seed leaves to defaults.
     member_count = 0
     for i in range(60):
         f = rng.choice(_FIRST_NAMES); l = rng.choice(_LAST_NAMES)
         site = site_ids[i % len(site_ids)]
-        # 70% adult, 25% mid-age, 5% senior — feels real on the dashboard
-        age_band = rng.choices(["young","mid","senior"], weights=[70,25,5])[0]
-        years = rng.randint(20,34) if age_band == "young" else rng.randint(35,54) if age_band == "mid" else rng.randint(55,72)
-        dob = (datetime.now(timezone.utc).date() - timedelta(days=years*365)).isoformat()
         db.execute(
-            """insert into users (org_id, site_id, email, password_hash, role, name, is_active, dob)
-               values ($1,$2,$3,$4,'member',$5,true,$6)""",
+            """insert into users (org_id, site_id, email, password_hash, role, name, is_active)
+               values ($1,$2,$3,$4,'member',$5,true)""",
             org_id, site, _fake_email(f"{f}{i}", l, brand_slug),
             hash_password(_gen_demo_password()),
-            f"{f} {l}", dob,
+            f"{f} {l}",
         )
         member_count += 1
 
