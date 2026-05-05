@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /scim/
 
-Sitemap: https://headshealth.app/sitemap.xml
+Sitemap: https://elhhealth.app/sitemap.xml

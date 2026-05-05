@@ -1,4 +1,4 @@
-"""Cross-org isolation tests for Heads Health Platform.
+"""Cross-org isolation tests for ELH Health.
 
 Skips unless SUPABASE_URL + SUPABASE_SERVICE_KEY are set. On CI against
 the staging DB they MUST pass — RLS policies for orgs/sites/users/PHI

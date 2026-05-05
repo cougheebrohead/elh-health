@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: hhp
+    name: elhhealth
     runtime: python
     region: oregon
     plan: starter
@@ -10,7 +10,7 @@ services:
     autoDeploy: true
     envVars:
       - key: APEX_HOST
-        value: headshealth.app
+        value: elhhealth.app
       - key: ENV
         value: production
       - key: PYTHON_VERSION

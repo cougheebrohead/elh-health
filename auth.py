@@ -1,4 +1,4 @@
-"""Heads Health Platform auth — PBKDF2 password hashing + bearer-token sessions.
+"""ELH Health auth — PBKDF2 password hashing + bearer-token sessions.
 SSO is handled separately in sso.py; this module covers password fallback
 for org_admin/site_admin local accounts (and members where the org has
 sso_required=false)."""

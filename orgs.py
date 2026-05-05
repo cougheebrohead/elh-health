@@ -1,9 +1,9 @@
-"""Org resolver — Heads Health Platform uses Host header to map to an org.
+"""Org resolver — ELH Health uses Host header to map to an org.
 
-  <slug>.headshealth.app   → org by slug
+  <slug>.elhhealth.app   → org by slug
   <custom_domain>         → org by custom domain (rare for enterprise; usually
-                            they keep the headshealth.app subdomain)
-  apex (headshealth.app)   → marketing site (no org)
+                            they keep the elhhealth.app subdomain)
+  apex (elhhealth.app)   → marketing site (no org)
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Any
 
 from db import db
 
-APEX_HOST = os.environ.get("APEX_HOST", "headshealth.app")
+APEX_HOST = os.environ.get("APEX_HOST", "elhhealth.app")
 
 _CACHE: dict[str, tuple[float, dict | None]] = {}
 _TTL_SEC = 60

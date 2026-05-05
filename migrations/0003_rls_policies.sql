@@ -1,4 +1,4 @@
--- Heads Health Platform RLS — second line of defense behind app-layer org gating.
+-- ELH Health RLS — second line of defense behind app-layer org gating.
 -- Reads use app.org_id / app.user_id / app.user_role / app.site_id,
 -- which the app's RPCs SET LOCAL before user SQL runs.
 

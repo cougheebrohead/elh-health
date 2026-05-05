@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trust Center — Heads Health Platform</title>
-<meta name="description" content="Heads Health Platform security, compliance, sub-processors, and the controls your auditors are about to ask for.">
+<title>Trust Center — ELH Health</title>
+<meta name="description" content="ELH Health security, compliance, sub-processors, and the controls your auditors are about to ask for.">
 <style>
 :root {
   --bg:#FDFBF7; --bg-card:#FFFFFF; --border:#E5E1DB;
@@ -45,7 +45,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 <body>
 
 <div class="nav">
-  <a href="/" style="color:inherit;text-decoration:none"><div class="logo">Heads Health Platform</div></a>
+  <a href="/" style="color:inherit;text-decoration:none"><div class="logo">ELH Health</div></a>
   <div>
     <a href="/security">Security brief</a>
     <a href="/pricing">Pricing</a>
@@ -56,7 +56,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 <div class="wrap">
   <div class="eyebrow">Trust Center</div>
   <h1>The controls your auditors will ask for. All in one place.</h1>
-  <p class="lede">Every Heads Health Platform customer gets a copy of these documents on contract execution. Most are downloadable here without an NDA — the deeper artifacts ship under DPA on request.</p>
+  <p class="lede">Every ELH Health customer gets a copy of these documents on contract execution. Most are downloadable here without an NDA — the deeper artifacts ship under DPA on request.</p>
 
   <div class="cards">
     <div class="card">
@@ -95,7 +95,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 <div class="wrap">
   <section>
     <h2>Sub-processors</h2>
-    <p class="lead-2">Heads Health Platform engages the following sub-processors. We notify customers 30 days before adding any new sub-processor that processes PHI.</p>
+    <p class="lead-2">ELH Health engages the following sub-processors. We notify customers 30 days before adding any new sub-processor that processes PHI.</p>
     <table>
       <tr><th>Provider</th><th>Purpose</th><th>Region</th><th>BAA-covered</th></tr>
       <tr><td>Supabase</td><td>Primary database, auth, file storage</td><td>US East (us-east-1)</td><td>✓</td></tr>
@@ -125,7 +125,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 
   <section>
     <h2>Vulnerability disclosure</h2>
-    <p class="lead-2">Coordinated disclosure to <a href="mailto:security@headshealth.app" style="color:var(--accent)">security@headshealth.app</a>. We respond within one business day and credit reporters in our public security log. We do not yet run a paid bounty program, but we will reward novel and impactful reports at our discretion.</p>
+    <p class="lead-2">Coordinated disclosure to <a href="mailto:security@elhhealth.app" style="color:var(--accent)">security@elhhealth.app</a>. We respond within one business day and credit reporters in our public security log. We do not yet run a paid bounty program, but we will reward novel and impactful reports at our discretion.</p>
   </section>
 
   <section>
@@ -142,7 +142,7 @@ li{margin-bottom:8px;color:var(--text-dim)}
 </div>
 
 <footer>
-  Heads Health Platform · An ELH Empire product · <a href="/" style="color:inherit">Home</a> · <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a> · <a href="mailto:security@headshealth.app" style="color:inherit">security@headshealth.app</a>
+  ELH Health · An ELH Empire product · <a href="/" style="color:inherit">Home</a> · <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a> · <a href="mailto:security@elhhealth.app" style="color:inherit">security@elhhealth.app</a>
 </footer>
 
 <script>
@@ -162,7 +162,7 @@ async function sendRequest() {
     if (!r.ok) throw new Error(d.error || 'failed');
     out.textContent = '✓ Got it. We\'ll be in touch within one business day.';
   } catch (e) {
-    out.textContent = 'Couldn\'t send — please email security@headshealth.app directly.';
+    out.textContent = 'Couldn\'t send — please email security@elhhealth.app directly.';
   }
 }
 </script>

@@ -1,4 +1,4 @@
-"""Heads Health Platform DB client — same shape as CoachHQ but ctx is org_id, user_id,
+"""ELH Health DB client — same shape as CoachHQ but ctx is org_id, user_id,
 role, site_id (the four GUCs the RLS policies key off)."""
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "") or os.environ.get("SUPABASE_KEY", "")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    print("[HHP] WARNING: SUPABASE_URL and SUPABASE_SERVICE_KEY required", flush=True)
+    print("[ELHHealth] WARNING: SUPABASE_URL and SUPABASE_SERVICE_KEY required", flush=True)
 
 
 def _request(method: str, path: str, body: dict | None = None) -> Any:
@@ -31,7 +31,7 @@ def _request(method: str, path: str, body: dict | None = None) -> Any:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         msg = e.read().decode("utf-8", errors="replace")[:500]
-        print(f"[HHP] PostgREST {e.code}: {msg}", flush=True)
+        print(f"[ELHHealth] PostgREST {e.code}: {msg}", flush=True)
         raise
 
 

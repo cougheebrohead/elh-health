@@ -1,6 +1,6 @@
 """SCIM 2.0 user provisioning endpoint.
 
-Heads Health Platform supports inbound SCIM so org IT can push users from Okta, Azure
+ELH Health supports inbound SCIM so org IT can push users from Okta, Azure
 AD, OneLogin, etc. The protocol is v2.0 over HTTPS with a per-org bearer
 token (whose sha256 is stored in `scim_config.bearer_token_hash`).
 

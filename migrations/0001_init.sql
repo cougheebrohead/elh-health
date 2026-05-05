@@ -1,4 +1,4 @@
--- Heads Health Platform — enterprise health platform schema.
+-- ELH Health — enterprise health platform schema.
 --
 -- Hierarchy: organization → site → trainer → member.
 -- An "org" is a customer (24 Hour Fitness, F45 HQ, Equinox).

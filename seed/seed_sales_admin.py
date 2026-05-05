@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Seed the Heads Health Platform sales-admin user (Head's super-admin)."""
+"""Seed the ELH Health sales-admin user (Head's super-admin)."""
 import os, sys, json, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("SUPABASE_URL", "https://skrxpiwhmafescfmlnrz.supabase.co")
 os.environ.setdefault(
     "SUPABASE_SERVICE_KEY",
-    open("/tmp/hhp_keys.env").read().split("SUPABASE_SERVICE_KEY=", 1)[1].strip(),
+    open("/tmp/elhhealth_keys.env").read().split("SUPABASE_SERVICE_KEY=", 1)[1].strip(),
 )
 from auth import hash_password
 

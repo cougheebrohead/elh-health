@@ -1,4 +1,4 @@
-# Heads Health Platform
+# ELH Health
 
 Enterprise health platform. Multi-site tenancy, SSO, SCIM, audit-chained
 PHI access, BAA-ready.
@@ -47,22 +47,22 @@ Cross-org isolation tests in `tests/test_isolation.py` are blocking on CI.
 
 - Hosting: Render (Oregon)
 - DB: Supabase (project `skrxpiwhmafescfmlnrz`)
-- DNS: Cloudflare for `headshealth.app` + wildcard `*.headshealth.app`
+- DNS: Cloudflare for `elhhealth.app` + wildcard `*.elhhealth.app`
 - Email: Resend
 - Errors: Sentry
 
 ## SSO setup checklist (per Org)
 
 1. Customer IT exports IdP metadata (SAML) or registers OIDC client.
-2. Heads Health Platform admin pastes IdP entity ID, SSO URL, and X.509 cert into
+2. ELH Health admin pastes IdP entity ID, SSO URL, and X.509 cert into
    `orgs` row.
-3. Test SP-initiated login at `https://{slug}.headshealth.app/api/sso/login`.
+3. Test SP-initiated login at `https://{slug}.elhhealth.app/api/sso/login`.
 4. (Optional) Set `sso_required=true` to disable password fallback.
 
 ## SCIM setup
 
 1. Customer IT generates a SCIM bearer in their IdP.
-2. Heads Health Platform admin pastes its SHA-256 hash into `scim_config` row +
+2. ELH Health admin pastes its SHA-256 hash into `scim_config` row +
    sets `enabled=true`.
 3. Customer IT configures the IdP SCIM endpoint to
-   `https://{slug}.headshealth.app/scim/v2/`.
+   `https://{slug}.elhhealth.app/scim/v2/`.
