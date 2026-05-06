@@ -3,8 +3,8 @@
 Enterprise health platform. Multi-site tenancy, SSO, SCIM, audit-chained
 PHI access, BAA-ready.
 
-Sells direct (no Stripe Checkout). Pricing: $8 / member / month for the
-Enterprise tier; Enterprise Plus is custom.
+Sells direct (no Stripe Checkout). Banded MAU pricing with a base + floor
++ overage model — see `/pricing` for tiers. Enterprise Plus is custom.
 
 ## Architecture
 

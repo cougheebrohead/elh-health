@@ -32,8 +32,8 @@ body { background:var(--bg); color:var(--text); font:17px/1.7 'Inter',-apple-sys
 .wrap { max-width:1080px; margin:0 auto; padding:64px 24px; }
 h1 { font:500 52px/1.05 var(--serif); letter-spacing:-0.02em; margin-bottom:12px; }
 .lede { color:var(--text-dim); font-size:19px; margin-bottom:48px; max-width:680px; }
-.tier-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
-@media (max-width:760px) { .tier-row { grid-template-columns:1fr; } }
+.tier-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
+@media (max-width:980px) { .tier-row, .tier-row[style] { grid-template-columns:1fr !important; } }
 .tier { background:#fff; border:1px solid var(--border); border-radius:14px; padding:36px; }
 .tier h2 { font:500 32px var(--serif); margin-bottom:6px; }
 .price { color:var(--text-dim); margin-bottom:14px; }
@@ -59,45 +59,60 @@ th { font-weight:700; }
 
 <div class="wrap">
   <h1>Pricing</h1>
-  <p class="lede">All ELH Health contracts are direct, annual, and invoiced. Pricing scales with active members and includes implementation, training, and quarterly business reviews.</p>
+  <p class="lede">ELH Health is sold via direct contract — not self-service checkout. We license per Monthly Active User with a banded floor + overage rate. Every customer gets a deployment partner, security review, and quarterly business review baked into the price.</p>
 
-  <div class="tier-row">
+  <div class="tier-row" style="grid-template-columns:1fr 1fr 1fr">
     <div class="tier">
-      <h2>Enterprise</h2>
-      <div class="price"><strong>$8</strong> per active member per month, billed annually</div>
-      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For chains, clinics, and telehealth practices serving up to a few thousand members.</p>
+      <h2>Single Club</h2>
+      <div class="price">$2,000 / mo base · 5,000 MAU floor · $1.00 / MAU overage</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For a single club or premium location.</p>
       <ul>
-        <li>Up to 25 sites</li>
-        <li>Hierarchical org → site → trainer → member</li>
-        <li>SSO (SAML 2.0 + OIDC) included</li>
-        <li>SCIM v2 inbound provisioning</li>
+        <li>Single club or premium location</li>
+        <li>SSO + SCIM included</li>
         <li>BAA available</li>
-        <li>Tamper-evident audit logs (7-year retention)</li>
-        <li>Dedicated success manager</li>
         <li>Quarterly compliance review</li>
-        <li>4-hour support SLA, business hours</li>
+        <li>4-hour support SLA</li>
       </ul>
       <a href="/demo" class="btn">Schedule a demo</a>
     </div>
 
     <div class="tier">
-      <h2>Enterprise Plus</h2>
-      <div class="price">Custom · multi-year terms · custom SLAs</div>
-      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For multi-region deployments and operators with single-tenant requirements.</p>
+      <h2>Regional Chain</h2>
+      <div class="price">$25,000 / mo base · 75,000 MAU floor · $0.75 / MAU overage</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For multi-site rollups with regional management.</p>
       <ul>
-        <li>Unlimited sites and members</li>
-        <li>Single-tenant database (private region)</li>
-        <li>Customer-managed encryption keys (CMK)</li>
-        <li>Custom data residency (US East / US West / EU / Canada)</li>
-        <li>Per-tenant API gateway</li>
-        <li>Named security engineer</li>
-        <li>Dedicated implementation team</li>
-        <li>1-hour incident response, 24×7</li>
-        <li>Bridge letters and on-site security review</li>
+        <li>Multi-site rollups · regional management</li>
+        <li>Custom integrations (CRM, billing, HRIS)</li>
+        <li>Quarterly business reviews + dedicated CSM</li>
+        <li>SSO + SCIM + BAA + audit chain</li>
+        <li>4-hour support SLA</li>
+      </ul>
+      <a href="/demo" class="btn">Schedule a demo</a>
+    </div>
+
+    <div class="tier">
+      <h2>Enterprise</h2>
+      <div class="price">$200,000 / mo base · 250,000 MAU floor · $0.50 / MAU overage</div>
+      <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px">For national chain scale.</p>
+      <ul>
+        <li>National chain scale</li>
+        <li>API + webhooks for chain integrations</li>
+        <li>Source escrow available</li>
+        <li>Multi-year commit discount + SLA</li>
+        <li>Everything in Regional</li>
       </ul>
       <a href="/demo" class="btn">Talk to sales</a>
     </div>
   </div>
+
+  <div style="margin-top:32px;background:var(--bg-soft);border:1px solid var(--border);border-radius:14px;padding:28px 32px">
+    <h3 style="font:500 22px var(--serif);color:var(--primary);margin-bottom:8px">Enterprise Plus — Custom</h3>
+    <p style="color:var(--text-dim);font-size:15px;line-height:1.6">For tier-1 chains, telehealth operators, and clinical programs that require: single-tenant database (private region), customer-managed encryption keys (CMK), data residency (US-East / US-West / EU / Canada), per-tenant API gateway, named security engineer, 1-hour incident response 24×7, on-site security review, bridge letters. Multi-year terms, custom SLAs.</p>
+  </div>
+
+  <p style="text-align:center;margin-top:24px;color:var(--text-faint);font-size:13px">
+    Active = unique authenticated session in a 30-day window. Stricter engagement-based MAU available with a per-MAU rate adjustment. Multi-year commit discounts available.
+  </p>
 
   <h2 style="font:500 28px var(--serif); margin-top:64px">Included on every plan</h2>
   <table>
