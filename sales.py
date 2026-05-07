@@ -252,8 +252,11 @@ def handle(handler, org: dict | None, method: str, path: str, url) -> None:
         if not sets:
             return handler._err(400, "nothing to update")
         args.append(lead_id)
+        # SQL injection safe: `sets` is built from the hardcoded column
+        # allowlist above; values are bound as positional parameters.
+        # nosec B608 - reviewed, allowlist + parameterized
         db.execute(
-            f"update crm_leads set {', '.join(sets)}, updated_at = now() where id = ${len(args)}",
+            f"update crm_leads set {', '.join(sets)}, updated_at = now() where id = ${len(args)}",  # nosec B608
             *args,
         )
         return handler._json(200, {"ok": True})

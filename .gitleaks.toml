@@ -1,0 +1,26 @@
+# gitleaks config for elh-health.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation + test patterns (not actual secrets)"
+paths = [
+  '''docs/''',
+  '''.*\.example''',
+  '''.*\.md''',
+  '''tests/''',
+]
+regexes = [
+  '''<REDACTED>''',
+  '''<paste-real-key-here>''',
+  '''sk_live_REPLACE''',
+  '''rk_live_REPLACE''',
+  '''PBKDF2_ITERATIONS''',  # constant name, not a secret
+]
+# Historical false positive: tests/test_smoke.py contains the symbol
+# `PBKDF2_ITERATIONS` which gitleaks' generic-api-key heuristic flagged.
+# Allowlisted by commit fingerprint so gitleaks doesn't re-fire.
+commits = [
+  "92329c81446fab3be70636bf6d7d27f1f458e304",
+]
