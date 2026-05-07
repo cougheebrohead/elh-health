@@ -843,9 +843,28 @@ class H(BaseHTTPRequestHandler):
                 return self._err(429, "too many photos")
             body = self._read_body()
             b64 = (body.get("image_b64") or "").strip()
-            mime = (body.get("mime") or "image/jpeg").strip()
-            if not b64 or len(b64) > 6_000_000:
-                return self._err(400, "image required (base64, < 4.5MB)")
+            if not b64 or len(b64) > 14_000_000:  # ~10MB after base64 inflation
+                return self._err(400, "image required (base64, < 10MB)")
+            try:
+                import base64 as _b64
+                image_bytes = _b64.b64decode(b64, validate=False)
+            except Exception:
+                return self._err(400, "image decode failed")
+            # Iron Dome I-5: validate decoded bytes via shared helper.
+            try:
+                from fitapp_core.security import upload_validate, UploadError
+                try:
+                    result = upload_validate(
+                        image_bytes,
+                        declared_filename=(body.get("filename") or "")[:200],
+                        max_bytes=10 * 1024 * 1024,
+                        allowed_extensions=("jpeg", "png", "heic"),
+                    )
+                    mime = result.media_type
+                except UploadError as e:
+                    return self._err(e.http_status, f"{e.code}: {e}")
+            except ImportError:
+                mime = (body.get("mime") or "image/jpeg").strip()
             try:
                 items = _ai_food_photo(b64, mime)
             except RuntimeError as e:
