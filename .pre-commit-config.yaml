@@ -1,0 +1,8 @@
+# Iron Dome I-7: pre-commit gitleaks.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+        name: gitleaks (block secrets in commits)
+        args: [protect, --staged, --redact, --config=.gitleaks.toml]
