@@ -18,13 +18,30 @@ def test_password_roundtrip():
     assert not verify_password("x", "")
 
 
-def test_password_pbkdf2_iterations():
-    from auth import hash_password, PBKDF2_ITERATIONS
+def test_password_hash_uses_argon2id():
+    """Iron Dome I-2: new hashes are Argon2id (PHC string)."""
+    from auth import hash_password
     h = hash_password("anything-strong-1234567")
-    assert h.startswith("pbkdf2_sha256$")
-    iters = int(h.split("$")[1])
-    assert iters >= 200_000
-    assert PBKDF2_ITERATIONS >= 200_000
+    assert h.startswith("$argon2id$"), f"expected Argon2id, got {h[:20]}"
+
+
+def test_legacy_pbkdf2_hashes_still_verify():
+    """Lazy-migration: existing pbkdf2_sha256$ hashes from before the
+    Iron Dome upgrade must keep verifying."""
+    import hashlib
+    from auth import verify_password, hash_needs_upgrade
+    plain = "legacy-Solid-Pa55phrase-2026!"
+    salt = bytes(range(16))
+    dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt, 200_000)
+    legacy = f"pbkdf2_sha256$200000${salt.hex()}${dk.hex()}"
+    assert verify_password(plain, legacy)
+    assert not verify_password("wrong", legacy)
+    assert hash_needs_upgrade(legacy)
+
+
+def test_argon2_no_rehash_needed():
+    from auth import hash_password, hash_needs_upgrade
+    assert not hash_needs_upgrade(hash_password("x"))
 
 
 def test_rate_limit_per_window():

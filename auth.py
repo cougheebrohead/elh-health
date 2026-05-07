@@ -1,48 +1,115 @@
-"""ELH Health auth — PBKDF2 password hashing + bearer-token sessions.
-SSO is handled separately in sso.py; this module covers password fallback
-for org_admin/site_admin local accounts (and members where the org has
-sso_required=false)."""
+"""ELH Health auth — Argon2id password hashing + lockout-aware verify
++ bearer-token sessions.
+
+Iron Dome I-2 parity: shared password hashing with FitApp + elh-coach
+via fitapp_core.security.passwords. Legacy "pbkdf2_sha256$..." hashes
+keep working through lazy migration; on a successful PBKDF2 verify,
+the login flow re-hashes with Argon2id and writes back so the next
+login uses the modern algorithm.
+
+SSO is handled separately in sso.py; this module covers password
+fallback for org_admin/site_admin local accounts (and members where
+the org has sso_required=false).
+"""
 
 from __future__ import annotations
 
 import hashlib
-import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from fitapp_core.security import (
+    hash_password as _argon2_hash,
+    verify_password as _verify_any,
+    needs_rehash as _needs_rehash,
+)
+from fitapp_core.security.ratelimit import lockout_status
+
 from db import db
 
-PBKDF2_ITERATIONS = 200_000
+
 SESSION_TTL_DAYS = 30
+
+# Lockout policy (matches elh-coach + FitApp)
+LOCKOUT_THRESHOLD = 10
+LOCKOUT_BASE_S = 15 * 60
+LOCKOUT_CAP_S = 120 * 60
 
 
 def hash_password(plain: str) -> str:
+    """Mint Argon2id PHC hash for a new password."""
     if not plain:
         raise ValueError("password required")
-    salt = secrets.token_bytes(16)
-    dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt, PBKDF2_ITERATIONS)
-    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt.hex()}${dk.hex()}"
+    return _argon2_hash(plain)
 
 
 def verify_password(plain: str, stored: str | None) -> bool:
+    """Verify against Argon2id or legacy PBKDF2. Never raises on user
+    content."""
     if not stored or not plain:
         return False
-    try:
-        algo, iters_s, salt_hex, hash_hex = stored.split("$", 3)
-    except ValueError:
-        return False
-    if algo != "pbkdf2_sha256":
-        return False
-    try:
-        iters = int(iters_s)
-    except ValueError:
-        return False
-    salt = bytes.fromhex(salt_hex)
-    expected = bytes.fromhex(hash_hex)
-    dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt, iters)
-    return hmac.compare_digest(dk, expected)
+    return _verify_any(stored, plain)
 
+
+def hash_needs_upgrade(stored: str | None) -> bool:
+    """True if `stored` is a legacy hash that should be re-hashed
+    after a successful verify."""
+    if not stored:
+        return False
+    return _needs_rehash(stored)
+
+
+# ── per-account login lockout ───────────────────────────────────────
+
+def get_lockout_state(user_id: str) -> tuple[bool, int]:
+    """(locked, seconds_remaining) for the given user uuid.
+
+    No row = no failures yet -> not locked.
+    """
+    row = db.fetch_one(
+        "select fail_count, last_fail_at from user_login_failures where user_id = $1",
+        user_id,
+    )
+    if not row or not row.get("last_fail_at"):
+        return False, 0
+    last = row["last_fail_at"]
+    if isinstance(last, str):
+        last_ts = datetime.fromisoformat(last.replace("Z", "+00:00")).timestamp()
+    else:
+        last_ts = last.timestamp()
+    return lockout_status(
+        now=datetime.now(timezone.utc).timestamp(),
+        failure_count=int(row.get("fail_count") or 0),
+        last_failure=last_ts,
+        threshold=LOCKOUT_THRESHOLD,
+        base_lock_s=LOCKOUT_BASE_S,
+        cap_lock_s=LOCKOUT_CAP_S,
+    )
+
+
+def record_login_failure(user_id: str) -> None:
+    db.execute(
+        """insert into user_login_failures (user_id, fail_count, last_fail_at)
+           values ($1, 1, now())
+           on conflict (user_id) do update
+             set fail_count = user_login_failures.fail_count + 1,
+                 last_fail_at = now()""",
+        user_id,
+    )
+
+
+def clear_login_failures(user_id: str) -> None:
+    db.execute(
+        """insert into user_login_failures (user_id, fail_count, last_fail_at, locked_until)
+           values ($1, 0, null, null)
+           on conflict (user_id) do update
+             set fail_count = 0, last_fail_at = null, locked_until = null""",
+        user_id,
+    )
+
+
+# ── sessions (unchanged shape — still SHA-256 token hash) ──────────
 
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
@@ -99,3 +166,7 @@ def revoke_session(token: str) -> None:
     if not token:
         return
     db.execute("delete from sessions where token_hash = $1", _hash_token(token))
+
+
+def revoke_all_user_sessions(user_id: str) -> None:
+    db.execute("delete from sessions where user_id = $1", user_id)

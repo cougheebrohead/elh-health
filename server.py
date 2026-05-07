@@ -1036,8 +1036,47 @@ class H(BaseHTTPRequestHandler):
             "where org_id = $1 and email = $2",
             org["id"], email,
         )
+        # Iron-Dome I-2: per-account lockout takes precedence over verify.
+        if u and u.get("is_active"):
+            from auth import (
+                get_lockout_state, record_login_failure, clear_login_failures,
+                hash_needs_upgrade,
+            )
+            locked, retry_after = get_lockout_state(u["id"])
+            if locked:
+                self.send_response(423)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Retry-After", str(retry_after))
+                self.end_headers()
+                import json as _json
+                self.wfile.write(_json.dumps({
+                    "error": "Account temporarily locked due to repeated failed logins.",
+                    "retry_after_seconds": retry_after,
+                }).encode())
+                return
+
         if not u or not u.get("is_active") or not verify_password(password, u.get("password_hash")):
+            if u and u.get("is_active"):
+                try:
+                    record_login_failure(u["id"])
+                except Exception:
+                    pass
             return self._err(401, "invalid email or password")
+
+        # Successful auth — clear failure counter + lazy-migrate legacy hash
+        try:
+            clear_login_failures(u["id"])
+        except Exception:
+            pass
+        if hash_needs_upgrade(u.get("password_hash")):
+            try:
+                db.execute(
+                    "update users set password_hash = $1 where id = $2",
+                    hash_password(password), u["id"],
+                )
+            except Exception:
+                pass
+
         token = issue_session(
             user_id=u["id"], org_id=org["id"],
             ip=self.headers.get("CF-Connecting-IP") or self.client_address[0],
