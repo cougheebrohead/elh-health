@@ -53,8 +53,38 @@ try:
 except ImportError:
     sentry_sdk = None  # type: ignore
 SENTRY_DSN = os.environ.get("SENTRY_DSN_SERVER", "")
+
+
+def _sentry_before_send(event, hint):
+    """Iron Dome I-13/I-8 PII scrub."""
+    import re
+    EMAIL_RE = re.compile(r'([A-Za-z0-9._%+-]{1,2})[A-Za-z0-9._%+-]*@')
+
+    def walk(obj, depth=0):
+        if depth > 12: return obj
+        if isinstance(obj, dict):
+            for k in list(obj.keys()):
+                kl = k.lower() if isinstance(k, str) else ''
+                if any(s in kl for s in ('password','token','secret','apikey','api_key','authorization','cookie')):
+                    obj[k] = '<redacted>'
+                else:
+                    obj[k] = walk(obj[k], depth + 1)
+            return obj
+        if isinstance(obj, list): return [walk(x, depth + 1) for x in obj]
+        if isinstance(obj, str): return EMAIL_RE.sub(r'\1***@', obj)
+        return obj
+
+    try: walk(event)
+    except Exception: pass
+    return event
+
+
 if SENTRY_DSN and sentry_sdk:
-    sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False,
+        before_send=_sentry_before_send,
+        before_send_transaction=_sentry_before_send,
+    )
 
 from db import db
 from auth import hash_password, verify_password, issue_session, validate_session, revoke_session
