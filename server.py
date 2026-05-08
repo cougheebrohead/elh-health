@@ -353,6 +353,11 @@ class H(BaseHTTPRequestHandler):
                 return self._serve_static("favicon.svg")
             if path == "/robots.txt":
                 return self._serve_static("robots.txt")
+            # Iron Dome: serve security.txt at both standard locations
+            # (RFC 9116 prefers /.well-known/security.txt; root path is
+            # legacy compatibility for crawlers + manual checks).
+            if path in ("/security.txt", "/.well-known/security.txt"):
+                return self._serve_static("security.txt")
 
         # Sales super-admin lives at the apex (sales.elhhealth.app/admin/...)
         if path.startswith("/api/sales/"):
