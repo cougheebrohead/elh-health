@@ -1,0 +1,40 @@
+Contact: mailto:security@elhhealth.app
+Contact: mailto:support@elhhealth.app
+Expires: 2027-05-08T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://elh-health.onrender.com/.well-known/security.txt
+Policy: https://elhhealth.app/security/policy
+
+# ELH Health — enterprise health platform for gyms, clinics, multi-site
+# org administrators. Healthcare-adjacent: data sensitivity is HIGH.
+# We welcome reports from ethical security researchers.
+#
+# Reporting:
+#   * Send a clear write-up to security@elhhealth.app.
+#   * 90-day private window before public disclosure.
+#   * For SUSPECTED PHI exposure: please mark the email subject with
+#     [URGENT-PHI] so it routes to a same-day pager. We commit to
+#     acknowledging PHI-exposure reports within 4 business hours.
+#
+# Eligible scope:
+#   - https://elh-health.onrender.com/*
+#   - https://elhhealth.app/*  (when zone live)
+#   - The /api/* surface (REST, SCIM, SSO ACS)
+#   - the elh-health-ios app once published
+#
+# Out of scope:
+#   - Third-party platforms (Stripe, Supabase, Render, Cloudflare,
+#     Anthropic, customer SAML IdPs)
+#   - DoS / volumetric attacks
+#   - Social engineering against staff or customer admins
+#   - Physical access scenarios
+#
+# Safe Harbor:
+#   Good-faith research consistent with this policy will not be
+#   pursued legally. Stop at proof-of-concept; never access or modify
+#   real org data (use your own test signup or our demo tenant).
+#
+# Bug bounty:
+#   VDP-only currently. Will promote to bounty when revenue justifies.
+#   Critical findings on PHI paths may receive recognition outside
+#   the public scope.
