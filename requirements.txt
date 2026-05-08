@@ -1,4 +1,4 @@
-fitapp-core @ git+https://github.com/cougheebrohead/fitapp-core.git@f035aee8172c8116b3e697c352f4ac2d1c90bc6a
+fitapp-core @ git+https://github.com/cougheebrohead/fitapp-core.git@5654dadf3734991d22f18b159fafb4804d80206c
 sentry-sdk>=2.0,<3.0
 signxml>=4.0
 lxml>=5.0
