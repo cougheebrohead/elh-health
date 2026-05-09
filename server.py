@@ -754,6 +754,13 @@ class H(BaseHTTPRequestHandler):
             sess = self._require_session()
             if not sess: return
             body = self._read_body()
+            # Direct dict access on starts_at/ends_at would 500 the
+            # request when the client omits them. Validate first so
+            # the trainer gets a clean 400 instead of a stack trace.
+            starts_at = body.get("starts_at")
+            ends_at = body.get("ends_at")
+            if not starts_at or not ends_at:
+                return self._err(400, "starts_at and ends_at required")
             row = db.fetch_one(
                 """insert into schedule_sessions
                    (org_id, site_id, trainer_id, member_id, title, location, starts_at, ends_at)
@@ -763,7 +770,7 @@ class H(BaseHTTPRequestHandler):
                 body.get("member_id"),
                 (body.get("title") or "Session")[:200],
                 (body.get("location") or "in-person")[:200],
-                body["starts_at"], body["ends_at"],
+                starts_at, ends_at,
             )
             return self._json(201, {"id": row["id"]})
 
