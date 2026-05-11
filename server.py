@@ -877,6 +877,31 @@ class H(BaseHTTPRequestHandler):
                 return self._err(404, "product not found")
             return self._json(200, {"ok": True, "item": entry})
 
+        if method == "POST" and path == "/api/me/forever-scan":
+            # Forever-chemicals (PFAS) barcode scanner. Universal lookup
+            # across Open Food Facts, Open Beauty Facts, and Open Products
+            # Facts plus the shared PFAS category-knowledge layer + generic
+            # label-check guidance. Identical surface to ELH Coach.
+            sess = self._require_session()
+            if not sess: return
+            if sess["role"] != "member":
+                return self._err(403, "members only")
+            if not rate_allow(f"pfas_scan:{sess['user_id']}", 60, 60 * 60):
+                return self._err(429, "too many scans")
+            body = self._read_body()
+            code = (body.get("code") or "").strip()
+            if not code or not code.isdigit() or len(code) > 20:
+                return self._err(400, "valid barcode required")
+            try:
+                import fitapp_core
+                if not fitapp_core.valid_gtin_checksum(code):
+                    return self._err(400, "invalid checksum")
+                barcode_result = fitapp_core.pfas_barcode_universal(code)
+                composed = fitapp_core.pfas_scan_response(barcode_result)
+            except Exception as e:
+                return self._err(502, f"lookup failed: {e}")
+            return self._json(200, composed)
+
         if method == "POST" and path == "/api/me/meal/from-photo":
             sess = self._require_session()
             if not sess: return
