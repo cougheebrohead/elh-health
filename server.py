@@ -619,11 +619,19 @@ class H(BaseHTTPRequestHandler):
                    values ($1,$2,$3,$4) returning id, created_at::text as created_at""",
                 org_id, sess["user_id"], member_id, note_body,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="create_member_note", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(201, {"id": row["id"], "created_at": row["created_at"]})
 
         if method == "DELETE" and path.startswith("/api/members/") and "/notes/" in path:
             sess = self._require_session()
             if not sess: return
+            member_id = path.split("/")[3]
             note_id = path.rsplit("/", 1)[-1]
             # Only the trainer who wrote it (or org_admin) can delete
             note = db.fetch_one(
@@ -635,6 +643,13 @@ class H(BaseHTTPRequestHandler):
             if note["trainer_id"] != sess["user_id"] and sess["role"] != "org_admin":
                 return self._err(403, "only the author or an org admin can delete")
             db.execute("delete from trainer_notes where id = $1 and org_id = $2", note_id, org_id)
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="delete_member_note", resource_type="member",
+                resource_id=note_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"ok": True})
 
         if method == "GET" and path.startswith("/api/members/") and path.endswith("/audit"):
@@ -643,7 +658,18 @@ class H(BaseHTTPRequestHandler):
             if sess["role"] not in ("org_admin", "region_manager"):
                 return self._err(403, "forbidden")
             member_id = path.split("/")[3]
-            return self._json(200, {"trail": analytics.member_audit_trail(org_id, member_id)})
+            trail = analytics.member_audit_trail(org_id, member_id)
+            # HIPAA §164.308(a)(1)(ii)(D) treats audit-log review as a PHI
+            # access in its own right — log it so we can detect insiders
+            # browsing trails they have no operational reason to read.
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_audit_trail", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
+            return self._json(200, {"trail": trail})
 
         # ─── Programs ─────────────────────────────────────────────
         if method == "GET" and path == "/api/programs":
