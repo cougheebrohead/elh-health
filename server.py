@@ -22,9 +22,15 @@ ORG-SCOPED ({slug}.elhhealth.app):
 
   GET  /api/sites                 site list (gated by role)
   GET  /api/sites/{id}/members
-  POST /api/members/{id}/profile  (PHI write — audited)
-  GET  /api/members/{id}/profile  (PHI read  — audited)
-  GET  /api/members/{id}/biometrics
+
+  PHI-audited member endpoints (every hit writes an audit_event row):
+    GET    /api/members/{id}/overview     (read_member_overview)
+    GET    /api/members/{id}/notes        (read_member_notes)
+    POST   /api/members/{id}/notes        (create_member_note)
+    DELETE /api/members/{id}/notes/{nid}  (delete_member_note)
+    GET    /api/members/{id}/audit        (read_audit_trail)
+    GET    /api/messages/{id}             (read_member_messages)
+    POST   /api/messages/{id}             (create_member_message)
 
   /scim/v2/Users                  SCIM 2.0 (Bearer auth, per-org)
   /scim/v2/Users/{id}
@@ -40,6 +46,7 @@ import sys
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.error import HTTPError as _HTTPError
 from urllib.parse import parse_qs, urlparse
 
 # fitapp-core gives us cycle/glucose/macros/etc without re-implementing
@@ -94,7 +101,7 @@ from orgs import org_resolver, APEX_HOST
 from audit import audit_event
 from sso import saml_login_url, saml_assert_callback, upsert_user_from_sso, issue_sso_session
 from scim import (authenticate_scim_request, list_users, create_user,
-                  replace_user, patch_user, deactivate_user)
+                  replace_user, patch_user, deactivate_user, scim_error)
 from ratelimit import allow as rate_allow
 import analytics
 import sales
@@ -594,6 +601,13 @@ class H(BaseHTTPRequestHandler):
                    order by n.created_at desc limit 200""",
                 org_id, member_id,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_member_notes", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"notes": rows})
 
         if method == "POST" and path.startswith("/api/members/") and path.endswith("/notes"):
@@ -611,11 +625,19 @@ class H(BaseHTTPRequestHandler):
                    values ($1,$2,$3,$4) returning id, created_at::text as created_at""",
                 org_id, sess["user_id"], member_id, note_body,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="create_member_note", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(201, {"id": row["id"], "created_at": row["created_at"]})
 
         if method == "DELETE" and path.startswith("/api/members/") and "/notes/" in path:
             sess = self._require_session()
             if not sess: return
+            member_id = path.split("/")[3]
             note_id = path.rsplit("/", 1)[-1]
             # Only the trainer who wrote it (or org_admin) can delete
             note = db.fetch_one(
@@ -627,6 +649,13 @@ class H(BaseHTTPRequestHandler):
             if note["trainer_id"] != sess["user_id"] and sess["role"] != "org_admin":
                 return self._err(403, "only the author or an org admin can delete")
             db.execute("delete from trainer_notes where id = $1 and org_id = $2", note_id, org_id)
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="delete_member_note", resource_type="member",
+                resource_id=note_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"ok": True})
 
         if method == "GET" and path.startswith("/api/members/") and path.endswith("/audit"):
@@ -635,7 +664,18 @@ class H(BaseHTTPRequestHandler):
             if sess["role"] not in ("org_admin", "region_manager"):
                 return self._err(403, "forbidden")
             member_id = path.split("/")[3]
-            return self._json(200, {"trail": analytics.member_audit_trail(org_id, member_id)})
+            trail = analytics.member_audit_trail(org_id, member_id)
+            # HIPAA §164.308(a)(1)(ii)(D) treats audit-log review as a PHI
+            # access in its own right — log it so we can detect insiders
+            # browsing trails they have no operational reason to read.
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_audit_trail", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
+            return self._json(200, {"trail": trail})
 
         # ─── Programs ─────────────────────────────────────────────
         if method == "GET" and path == "/api/programs":
@@ -702,6 +742,13 @@ class H(BaseHTTPRequestHandler):
                    order by sent_at""",
                 org_id, member_id,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_member_messages", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"messages": rows})
 
         if method == "POST" and path.startswith("/api/messages/"):
@@ -722,6 +769,13 @@ class H(BaseHTTPRequestHandler):
                    values ($1,$2,$3,$4,$5,$6)""",
                 org_id, trainer_id, member_id, sess["user_id"], text,
                 bool(body.get("is_nudge", False)),
+            )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="create_member_message", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
             )
             return self._json(201, {"ok": True})
 
@@ -1220,12 +1274,17 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
 
     # ----------------- SCIM -----------------
+    def _scim_respond(self, err: tuple[int, dict]) -> None:
+        """Write a SCIM error envelope (RFC 7644 §3.12) to the wire."""
+        status, body = err
+        return self._json(status, body)
+
     def _scim(self, org: dict, method: str, path: str, url) -> None:
         cfg = db.fetch_one(
             "select * from scim_config where org_id = $1 and enabled = true", org["id"]
         )
         if not cfg or not authenticate_scim_request(cfg, self.headers.get("Authorization", "")):
-            return self._err(401, "unauthorized")
+            return self._scim_respond(scim_error(401, "unauthorized"))
         try:
             if path == "/scim/v2/Users":
                 if method == "GET":
@@ -1249,11 +1308,25 @@ class H(BaseHTTPRequestHandler):
                 if method == "DELETE":
                     deactivate_user(org["id"], user_id)
                     return self._json(204, {})
-            return self._err(404, "not found")
+            return self._scim_respond(scim_error(404, "not found"))
         except LookupError as e:
-            return self._err(404, str(e))
+            return self._scim_respond(scim_error(404, str(e)))
         except ValueError as e:
-            return self._err(400, str(e))
+            return self._scim_respond(scim_error(400, str(e), scim_type="invalidValue"))
+        except _HTTPError as e:
+            # PostgREST surfaces unique-constraint failures as HTTP 409.
+            if getattr(e, "code", None) == 409:
+                return self._scim_respond(scim_error(409, "uniqueness constraint violated",
+                                                    scim_type="uniqueness"))
+            if SENTRY_DSN and sentry_sdk:
+                sentry_sdk.capture_exception(e)
+            traceback.print_exc()
+            return self._scim_respond(scim_error(500, "internal"))
+        except Exception as e:
+            if SENTRY_DSN and sentry_sdk:
+                sentry_sdk.capture_exception(e)
+            traceback.print_exc()
+            return self._scim_respond(scim_error(500, "internal"))
 
 
 def main():

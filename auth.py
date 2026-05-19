@@ -14,8 +14,6 @@ the org has sso_required=false).
 
 from __future__ import annotations
 
-import hashlib
-import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -25,6 +23,10 @@ from fitapp_core.security import (
     needs_rehash as _needs_rehash,
 )
 from fitapp_core.security.ratelimit import lockout_status
+from fitapp_core.security.sessions import (
+    new_session_token as _new_session_token,
+    hash_token as _hash_session_token,
+)
 
 from db import db
 
@@ -109,16 +111,22 @@ def clear_login_failures(user_id: str) -> None:
     )
 
 
-# ── sessions (unchanged shape — still SHA-256 token hash) ──────────
+# ── sessions ────────────────────────────────────────────────────────
+# Token mint + SHA-256 fingerprint live in fitapp_core.security.sessions
+# (shared with FitApp + elh-coach). The DB row shape — org_id, site_id,
+# sso_session_id, ip_hash column — stays here because it's health-specific.
+
+import hashlib  # only ip-hash pseudonymity still needs it
+
 
 def _hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+    return _hash_session_token(token)
 
 
 def issue_session(*, user_id: str, org_id: str,
                   ip: str | None = None, ua: str | None = None,
                   sso_session_id: str | None = None) -> str:
-    token = secrets.token_urlsafe(32)
+    token = _new_session_token()
     expires = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
     db.execute(
         """insert into sessions
