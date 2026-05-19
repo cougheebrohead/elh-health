@@ -24,6 +24,28 @@ from typing import Any
 from db import db
 
 
+# RFC 7644 §3.12 — SCIM error response envelope.
+SCIM_ERROR_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:Error"
+
+
+def scim_error(status: int, detail: str,
+               scim_type: str | None = None) -> tuple[int, dict]:
+    """Build an RFC 7644 §3.12 error response.
+
+    Returns (http_status, body_dict). `scimType` is only set for 400-class
+    errors that have a defined detail type (invalidValue, invalidSyntax,
+    uniqueness, mutability, etc.); 404/500 omit it.
+    """
+    body: dict[str, Any] = {
+        "schemas": [SCIM_ERROR_SCHEMA],
+        "status": str(int(status)),
+        "detail": detail,
+    }
+    if scim_type:
+        body["scimType"] = scim_type
+    return int(status), body
+
+
 def authenticate_scim_request(org: dict, authorization_header: str) -> bool:
     if not authorization_header.lower().startswith("bearer "):
         return False

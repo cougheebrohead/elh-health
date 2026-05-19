@@ -59,3 +59,43 @@ def test_scim_user_serialization_shape():
     assert out["userName"] == "e@x.com"
     assert out["active"] is True
     assert out["meta"]["resourceType"] == "User"
+
+
+def test_scim_error_envelope_invalid_value():
+    """RFC 7644 §3.12 — ValueError-class errors return a 400 with the SCIM
+    error schema and scimType=invalidValue."""
+    from scim import scim_error
+    status, body = scim_error(400, "userName required", scim_type="invalidValue")
+    assert status == 400
+    assert body["schemas"] == ["urn:ietf:params:scim:api:messages:2.0:Error"]
+    assert body["status"] == "400"
+    assert body["detail"] == "userName required"
+    assert body["scimType"] == "invalidValue"
+
+
+def test_scim_error_envelope_not_found_omits_scim_type():
+    """404 errors don't have a defined scimType — the field must be absent."""
+    from scim import scim_error
+    status, body = scim_error(404, "user not found")
+    assert status == 404
+    assert body["status"] == "404"
+    assert body["detail"] == "user not found"
+    assert "scimType" not in body
+    assert body["schemas"] == ["urn:ietf:params:scim:api:messages:2.0:Error"]
+
+
+def test_scim_error_envelope_uniqueness():
+    from scim import scim_error
+    status, body = scim_error(409, "duplicate userName", scim_type="uniqueness")
+    assert status == 409
+    assert body["status"] == "409"
+    assert body["scimType"] == "uniqueness"
+
+
+def test_scim_error_envelope_internal():
+    """500s use the SCIM envelope but omit scimType (only 4xx have defined types)."""
+    from scim import scim_error
+    status, body = scim_error(500, "internal")
+    assert status == 500
+    assert body["status"] == "500"
+    assert "scimType" not in body

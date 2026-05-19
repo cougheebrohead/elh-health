@@ -40,6 +40,7 @@ import sys
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.error import HTTPError as _HTTPError
 from urllib.parse import parse_qs, urlparse
 
 # fitapp-core gives us cycle/glucose/macros/etc without re-implementing
@@ -94,7 +95,7 @@ from orgs import org_resolver, APEX_HOST
 from audit import audit_event
 from sso import saml_login_url, saml_assert_callback, upsert_user_from_sso, issue_sso_session
 from scim import (authenticate_scim_request, list_users, create_user,
-                  replace_user, patch_user, deactivate_user)
+                  replace_user, patch_user, deactivate_user, scim_error)
 from ratelimit import allow as rate_allow
 import analytics
 import sales
@@ -1227,12 +1228,17 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
 
     # ----------------- SCIM -----------------
+    def _scim_respond(self, err: tuple[int, dict]) -> None:
+        """Write a SCIM error envelope (RFC 7644 §3.12) to the wire."""
+        status, body = err
+        return self._json(status, body)
+
     def _scim(self, org: dict, method: str, path: str, url) -> None:
         cfg = db.fetch_one(
             "select * from scim_config where org_id = $1 and enabled = true", org["id"]
         )
         if not cfg or not authenticate_scim_request(cfg, self.headers.get("Authorization", "")):
-            return self._err(401, "unauthorized")
+            return self._scim_respond(scim_error(401, "unauthorized"))
         try:
             if path == "/scim/v2/Users":
                 if method == "GET":
@@ -1256,11 +1262,25 @@ class H(BaseHTTPRequestHandler):
                 if method == "DELETE":
                     deactivate_user(org["id"], user_id)
                     return self._json(204, {})
-            return self._err(404, "not found")
+            return self._scim_respond(scim_error(404, "not found"))
         except LookupError as e:
-            return self._err(404, str(e))
+            return self._scim_respond(scim_error(404, str(e)))
         except ValueError as e:
-            return self._err(400, str(e))
+            return self._scim_respond(scim_error(400, str(e), scim_type="invalidValue"))
+        except _HTTPError as e:
+            # PostgREST surfaces unique-constraint failures as HTTP 409.
+            if getattr(e, "code", None) == 409:
+                return self._scim_respond(scim_error(409, "uniqueness constraint violated",
+                                                    scim_type="uniqueness"))
+            if SENTRY_DSN and sentry_sdk:
+                sentry_sdk.capture_exception(e)
+            traceback.print_exc()
+            return self._scim_respond(scim_error(500, "internal"))
+        except Exception as e:
+            if SENTRY_DSN and sentry_sdk:
+                sentry_sdk.capture_exception(e)
+            traceback.print_exc()
+            return self._scim_respond(scim_error(500, "internal"))
 
 
 def main():
