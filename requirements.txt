@@ -1,5 +1,5 @@
 fitapp-core @ git+https://github.com/cougheebrohead/fitapp-core.git@3e7310dec8c73066a881f3e438b69f347135c2f7
-sentry-sdk>=2.0,<3.0
+sentry-sdk>=2.60.0,<3.0
 signxml>=4.0
 lxml>=5.0
 # cryptography 45.0.x had 3 disclosed CVEs (GHSA-m959-cc7f-wv43,
