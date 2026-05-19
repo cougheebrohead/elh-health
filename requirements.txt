@@ -7,4 +7,4 @@ lxml>=5.0
 cryptography>=46.0.7,<49.0
 # argon2-cffi powers fitapp_core.security.passwords (Argon2id with
 # legacy PBKDF2 lazy migration). Pinned for reproducible Render wheels.
-argon2-cffi>=23,<26
+argon2-cffi>=25.1.0,<26
