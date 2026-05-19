@@ -594,6 +594,13 @@ class H(BaseHTTPRequestHandler):
                    order by n.created_at desc limit 200""",
                 org_id, member_id,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_member_notes", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"notes": rows})
 
         if method == "POST" and path.startswith("/api/members/") and path.endswith("/notes"):
