@@ -22,9 +22,15 @@ ORG-SCOPED ({slug}.elhhealth.app):
 
   GET  /api/sites                 site list (gated by role)
   GET  /api/sites/{id}/members
-  POST /api/members/{id}/profile  (PHI write — audited)
-  GET  /api/members/{id}/profile  (PHI read  — audited)
-  GET  /api/members/{id}/biometrics
+
+  PHI-audited member endpoints (every hit writes an audit_event row):
+    GET    /api/members/{id}/overview     (read_member_overview)
+    GET    /api/members/{id}/notes        (read_member_notes)
+    POST   /api/members/{id}/notes        (create_member_note)
+    DELETE /api/members/{id}/notes/{nid}  (delete_member_note)
+    GET    /api/members/{id}/audit        (read_audit_trail)
+    GET    /api/messages/{id}             (read_member_messages)
+    POST   /api/messages/{id}             (create_member_message)
 
   /scim/v2/Users                  SCIM 2.0 (Bearer auth, per-org)
   /scim/v2/Users/{id}
@@ -736,6 +742,13 @@ class H(BaseHTTPRequestHandler):
                    order by sent_at""",
                 org_id, member_id,
             )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="read_member_messages", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
+            )
             return self._json(200, {"messages": rows})
 
         if method == "POST" and path.startswith("/api/messages/"):
@@ -756,6 +769,13 @@ class H(BaseHTTPRequestHandler):
                    values ($1,$2,$3,$4,$5,$6)""",
                 org_id, trainer_id, member_id, sess["user_id"], text,
                 bool(body.get("is_nudge", False)),
+            )
+            audit_event(
+                org_id=org_id, actor_id=sess["user_id"], actor_role=sess["role"],
+                action="create_member_message", resource_type="member",
+                resource_id=member_id, member_subject=member_id,
+                ip_hash=self._ip_hash(),
+                user_agent=self.headers.get("User-Agent", "")[:300],
             )
             return self._json(201, {"ok": True})
 
