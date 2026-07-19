@@ -175,12 +175,18 @@ def _gemini_call(image_b64: str, mime: str, api_key: str) -> list[dict]:
 
 
 def _claude_call(image_b64: str, mime: str, api_key: str) -> list[dict]:
+    # Static _PHOTO_PROMPT hoisted into `system` with cache_control so
+    # every scan after the first pays ~10% input-token price within the
+    # 5-minute cache window.
     body = {
         "model": "claude-sonnet-4-6",
         "max_tokens": 1500,
+        "system": [
+            {"type": "text", "text": _PHOTO_PROMPT,
+             "cache_control": {"type": "ephemeral"}},
+        ],
         "messages": [{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
-            {"type": "text", "text": _PHOTO_PROMPT},
         ]}],
     }
     req = _urllib_request.Request(
